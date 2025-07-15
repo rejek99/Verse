@@ -1,0 +1,2333 @@
+
+using { /Fortnite.com/Devices }
+using { /Verse.org/Simulation }
+using { /UnrealEngine.com/Temporary/Diagnostics }
+using { /UnrealEngine.com/Temporary/UI }
+using { /UnrealEngine.com/Temporary/SpatialMath }
+using { /Verse.org/Assets }
+using { /Fortnite.com/UI }
+using { /Verse.org/Colors }
+using { /Fortnite.com/Characters }
+using { /Fortnite.com/Playspaces}
+using { /Fortnite.com/Game}
+using { /Verse.org/Random}
+using { /Verse.org}
+using {/Verse.org/Concurrency}
+
+<# 
+ Created By:  Himez
+
+ X/Twitter : @HimezUefn
+ Discord : Himez
+
+ note: if u find any bugs or have any suggestions feel free to contact me.
+
+This is a Achievement Manager that can be used to track player stats and award achievements based on the stats.
+#>
+
+
+
+
+#VERSION 1.0.0
+
+ <#
+      # Instances of each stat_type you can use in your experience
+
+            Kills<public>:kill_stat = kill_stat{}
+            Deaths<public>:death_stat = death_stat{}
+            Elo<public>:elo_stat = elo_stat{}
+            Version<public>:version_stat = version_stat{}
+            PistolKills<public>:pistol_kill_stat = pistol_kill_stat{}
+            ShotGunKills<public>:shotgun_kill_stat = shotgun_kill_stat{}
+            RifleKills<public>:rifle_kill_stat = rifle_kill_stat{}
+            SmgKills<public>:smg_kill_stat = smg_kill_stat{}
+            SniperKills<public>:sniper_kill_stat = sniper_kill_stat{}
+            MeleeKills<public>:melee_kill_stat = melee_kill_stat{}
+            HeadShotKills<public>:headshot_kill_stat = headshot_kill_stat{}
+            Jumps<public>:jump_stat = jump_stat{}
+            Run<public>:run_stat = run_stat{}
+            Emote<public>:emote_stat = emote_stat{}
+            Trolling<public>:trolling_stat = trolling_stat{}
+  
+#>
+
+# A Verse-authored creative device that can be placed in a level
+verse_persistence := struct<concrete>{
+    @editable Version : int = 1
+}
+Default_Values := class<concrete>{
+    @editable Value1 : int = 0
+    @editable Value2 : int = 0
+    @editable Value3 : int = 0
+    @editable Value4 : int = 0
+    @editable Value5 : int = 0
+    @editable Value6 : int = 0
+    @editable Value7 : int = 0
+    @editable Value8 : int = 0
+    @editable Value9 : int = 0
+    @editable Value10: int = 0
+
+}
+Default_Rank_Values := class<concrete>{
+    @editable Value1 : int = 0
+    @editable Value2 : int = 0
+    @editable Value3 : int = 0
+    @editable Value4 : int = 0
+    @editable Value5 : int = 0
+    @editable Value6 : int = 0
+    @editable Value7 : int = 0
+    @editable Value8 : int = 0
+    @editable Value9 : int = 0
+    @editable Value10: int = 0
+    @editable Value11: int = 0
+    @editable Value12: int = 0
+    @editable Value13: int = 0
+    @editable Value14: int = 0
+    @editable Value15: int = 0
+    @editable Value16: int = 0
+    @editable Value17: int = 0
+    @editable Value18: int = 0
+}
+Achievement_Difficulty := struct <concrete>{
+    @editable  EliminationDifficulty : ?Default_Values = false
+    @editable  PistolKillsDifficulty : ?Default_Values = false
+    @editable  ShotgunKillsDifficulty : ?Default_Values = false
+    @editable  SMGKillsDifficulty : ?Default_Values = false
+    @editable  ARKillsDifficulty : ?Default_Values = false
+    @editable  SniperKillsDifficulty : ?Default_Values = false
+    @editable  MeleeKillsDifficulty : ?Default_Values = false
+    @editable  HeadShotKillsDifficulty : ?Default_Values = false
+    @editable  JumpsDifficulty : ?Default_Values = false
+    @editable  RunDifficulty : ?Default_Values = false
+    @editable  EmoteDifficulty : ?Default_Values = false
+    @editable  TrollingDifficulty : ?Default_Values = false
+
+}
+general_settings := struct<concrete>{
+  
+    @editable AddUiButton1 : button_device = button_device{}
+    @editable AddUiButton2 : button_device = button_device{}
+    @editable Spawners : []player_spawner_device = array{}
+    @editable AchievementUnlockedSound :  audio_player_device = audio_player_device{}
+    @editable Achievements_Goals : Achievement_Difficulty = Achievement_Difficulty{}
+    @editable Ranks : ?Default_Rank_Values = false
+
+}
+Tracker_Devices := struct<concrete>{ 
+    @editable EliminationTracker : tracker_device = tracker_device{}
+    @editable PistolTracker : tracker_device = tracker_device{}
+    @editable ShotgunTracker : tracker_device = tracker_device{}
+    @editable SMGTracker : tracker_device = tracker_device{}
+    @editable ARTracker : tracker_device = tracker_device{}
+    @editable SniperTracker : tracker_device = tracker_device{}
+    @editable MeleeTracker : tracker_device = tracker_device{}
+    @editable HeadShotTracker : tracker_device = tracker_device{}
+    @editable RunTracker : tracker_device = tracker_device{}
+    @editable EmoteTracker : mutator_zone_device = mutator_zone_device{}
+   
+}    
+Accolades:=struct<concrete>{
+    @editable Elimination : accolades_device = accolades_device{}
+    @editable HeadShotElimination : accolades_device = accolades_device{}
+    @editable AchievementUnlocked : accolades_device = accolades_device{}
+    @editable RunningBonus: accolades_device = accolades_device{}
+
+}
+Color_Settings:=struct<concrete>{
+  @editable NavigationBackgroundColor : ?color = false
+  @editable NavigationProgressFillColor : ?color = false
+  @editable NavigationProgressBackgroundColor : ?color = false
+
+  @editable PageBackgroundColor  : ?color = false
+
+  @editable AchievementsBoxColors : ?color = false
+  @editable AchievementsProgressFillColors : ?color = false
+  @editable AchievementsProgressBackgroundColors : ?color = false
+
+  @editable RankBoxColor : ?color = false
+} 
+Rank_struct := struct<concrete>{ 
+    @editable RankName : string = "BRONZE l"
+    @editable RankEloGoal : int = 0
+   
+   
+}      
+debugger_testing := struct<concrete>{
+    
+    @editable IncrementPistolStat : button_device = button_device{}
+    @editable IncrementShotgunStat : button_device = button_device{}
+    @editable IncrementSMGStat : button_device = button_device{}
+    @editable IncrementARStat : button_device = button_device{}
+    @editable IncrementSniperStat : button_device = button_device{}
+    @editable IncrementMeleeStat : button_device = button_device{}
+    @editable IncrementHeadShotStat : button_device = button_device{}
+    @editable IncrementJumpStat : button_device = button_device{}
+    @editable AddCustomPlayer : button_device = button_device{}
+}
+Achievement_Manager := class(creative_device):
+    @editable Verse_Persistence : verse_persistence = verse_persistence{}
+    @editable General_Settings : general_settings = general_settings{}
+    @editable Color_settings : Color_Settings = Color_Settings{}
+    @editable Trackers : Tracker_Devices = Tracker_Devices{}
+    @editable Accolade : Accolades = Accolades{}
+    @editable Debugging : debugger_testing = debugger_testing{}
+
+   var PistolKillsDenominators :[]int = array{5, 10, 20, 50, 75, 150, 200, 300, 400, 500}
+
+   var ShotgunKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+   
+   var RifleKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+   
+   var SmgKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+ 
+   var SniperKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+
+   var MeleeKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+
+   var HeadShotKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+
+   var JumpsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+
+   var RunDenominators :[]int = array{100, 500, 2000,4000,5000, 10000, 15000, 20000, 50000, 100000}
+
+   var EmoteDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+
+   var TrollingDenominators :[]int = array{2, 4, 6, 10, 15, 20, 30, 50, 75, 100}
+
+   var EloDenominators :[]int = array{ 25, 75, 175, 250, 450, 650, 750, 900, 1200, 1400, 1750 , 2000, 2200,2500, 3000, 3400, 4000,5000}
+
+   var EliminationDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+
+   var PlayerUiMap : [player]Achievements_Custom_Player = map{}
+    
+   var PlayerStatsManager : player_stats_manager = player_stats_manager{}
+
+   # Runs when the device is started in a running game
+    OnBegin<override>()<suspends>:void=
+        GetPlayspace().PlayerRemovedEvent().Subscribe(OnPlayerLeftServer)
+        InitSpawners()
+        initDenominators()
+        InitButtons()
+        InitTrackers()
+        Playspace : fort_playspace = GetPlayspace()
+        Players := Playspace.GetPlayers()
+        PlayerStatsManager.InitializeAllPlayers(Players)
+        for(Player:Players):
+            OnPlayerAdded(Player)
+        General_Settings.AddUiButton1.InteractedWithEvent.Subscribe(AddUiButtonClicked)
+        General_Settings.AddUiButton2.InteractedWithEvent.Subscribe(AddUiButtonClicked)
+        Debugging.AddCustomPlayer.InteractedWithEvent.Subscribe(OnPlayerAdded)
+        
+        Print("Achievement Manager Started")
+
+   #Clean up Data from leaving player to free up memory
+    OnPlayerLeftServer(PlayerLeaving : agent):void=
+        var NewMap : [player]Achievements_Custom_Player = map{}
+      if(Player := player[PlayerLeaving] ):
+       for(Key -> Value : PlayerUiMap, Key <> PlayerLeaving):
+         set NewMap = ConcatenateMaps(NewMap, map{Key => Value})
+       set PlayerUiMap = NewMap     
+       Print("Player Removed")
+
+    # initialize the spawners and subscribe to the spawned event
+    InitSpawners():void=
+        Spawners :=  General_Settings.Spawners
+        for(Spawner:Spawners):
+            Spawner.SpawnedEvent.Subscribe(OnPlayerAdded)
+
+   # inntialize the Custom Achievement goals 
+    initDenominators():void=   
+        AG := General_Settings.Achievements_Goals
+
+        if. ELIMS := AG.EliminationDifficulty? then. set EliminationDenominators = MakeArray(ELIMS) else. Print("Failed to get EliminationDifficulty using Default Values")
+        if. PD := AG.PistolKillsDifficulty?  then. set PistolKillsDenominators = MakeArray(PD) else. Print("Failed to get PistolKillsDifficulty using Default Values")
+        if. SD := AG.ShotgunKillsDifficulty?  then. set ShotgunKillsDenominators = MakeArray(SD) else. Print("Failed to get ShotgunKillsDifficulty using Default Values")
+        if. RD := AG.ARKillsDifficulty?  then. set RifleKillsDenominators = MakeArray(RD) else. Print("Failed to get ARKillsDifficulty using Default Values")
+        if. SMG := AG.SMGKillsDifficulty?  then. set SmgKillsDenominators = MakeArray(SMG) else. Print("Failed to get SMGKillsDifficulty using Default Values")
+        if. SN := AG.SniperKillsDifficulty?  then. set SniperKillsDenominators = MakeArray(SN) else. Print("Failed to get SniperKillsDifficulty using Default Values")
+        if. M := AG.MeleeKillsDifficulty?  then. set MeleeKillsDenominators = MakeArray(M) else. Print("Failed to get MeleeKillsDifficulty using Default Values")
+        if. HS := AG.HeadShotKillsDifficulty?  then. set HeadShotKillsDenominators = MakeArray(HS) else. Print("Failed to get HeadShotKillsDifficulty using Default Values")
+        if. J := AG.JumpsDifficulty?  then. set JumpsDenominators = MakeArray(J) else. Print("Failed to get JumpsDifficulty using Default Values")
+        if. R := AG.RunDifficulty?  then. set RunDenominators = MakeArray(R) else. Print("Failed to get RunDifficulty using Default Values")
+        if. E := AG.EmoteDifficulty?  then. set EmoteDenominators = MakeArray(E) else. Print("Failed to get EmoteDifficulty using Default Values")
+        if. T := AG.TrollingDifficulty?  then. set TrollingDenominators = MakeArray(T) else. Print("Failed to get TrollingDifficulty using Default Values")
+        if. ELO := General_Settings.Ranks?  then. set EloDenominators = MakeRankArray(ELO) else. Print("Failed to get EloDifficulty using Default Values")
+    MakeArray(SingleValues : Default_Values):[]int=
+        Array : []int =  {SingleValues.Value1,SingleValues.Value2,SingleValues.Value3,SingleValues.Value4,SingleValues.Value5,SingleValues.Value6,SingleValues.Value7,SingleValues.Value8,SingleValues.Value9,SingleValues.Value10}
+        return Array
+    MakeRankArray(SingleValues : Default_Rank_Values):[]int=
+        Array : []int =  {SingleValues.Value1,SingleValues.Value2,SingleValues.Value3,SingleValues.Value4,SingleValues.Value5,SingleValues.Value6,SingleValues.Value7,SingleValues.Value8,SingleValues.Value9,SingleValues.Value10,SingleValues.Value11,SingleValues.Value12,SingleValues.Value13,SingleValues.Value14,SingleValues.Value15,SingleValues.Value16,SingleValues.Value17,SingleValues.Value18}
+        return Array
+         
+   # initialize trackers for the achievements
+    InitTrackers():void=
+        Trackers.PistolTracker.CompleteEvent.Subscribe(OnPistolCompleted)
+        Trackers.RunTracker.CompleteEvent.Subscribe(OnRunTrackerCompleted)
+        Trackers.ShotgunTracker.CompleteEvent.Subscribe(OnShotgunCompleted)
+        Trackers.SMGTracker.CompleteEvent.Subscribe(OnSMGCompleted)
+        Trackers.ARTracker.CompleteEvent.Subscribe(OnARCompleted)
+        Trackers.SniperTracker.CompleteEvent.Subscribe(OnSniperCompleted)
+        Trackers.MeleeTracker.CompleteEvent.Subscribe(OnMeleeCompleted)
+        Trackers.HeadShotTracker.CompleteEvent.Subscribe(OnHeadShotCompleted)
+        Trackers.EmoteTracker.AgentBeginsEmotingEvent.Subscribe(SpawnOnEmoted)
+        Trackers.EmoteTracker.AgentEndsEmotingEvent.Subscribe(SpawnStoppedEmoting) 
+
+   # initialize buttons for testing     
+    InitButtons():void=
+        Debugging.IncrementPistolStat.InteractedWithEvent.Subscribe(OnPistolCompleted) 
+        Debugging.IncrementShotgunStat.InteractedWithEvent.Subscribe(OnShotgunCompleted)
+        Debugging.IncrementSMGStat.InteractedWithEvent.Subscribe(OnSMGCompleted)
+        Debugging.IncrementARStat.InteractedWithEvent.Subscribe(OnARCompleted)
+        Debugging.IncrementSniperStat.InteractedWithEvent.Subscribe(OnSniperCompleted)
+        Debugging.IncrementMeleeStat.InteractedWithEvent.Subscribe(OnMeleeCompleted)
+        Debugging.IncrementHeadShotStat.InteractedWithEvent.Subscribe(OnHeadShotCompleted)
+
+   #Tracker Functions ---------------------------------------------
+    SpawnStoppedEmoting(Agent:agent):void=
+        if(Player := player[Agent], CustomPlayer := PlayerUiMap[Player]):
+            set CustomPlayer.AgentEmoting = false
+            Print("Player CustomPlayer updated to false")
+            
+    SpawnOnEmoted(Agent:agent):void=
+        Print("Player Emoted Spawned")
+        spawn. OnEmoted(Agent)
+
+    OnEmoted(Agent:agent)<suspends>:void=
+          if(Player := player[Agent],CustomPlayer := PlayerUiMap[Player]):
+            if(CustomPlayer.AgentEmoting?):
+                Print(" Player is Already emoting Dont start another loop ")
+            else:    
+                set CustomPlayer.AgentEmoting = true
+                Print("Code Reached")
+                loop:
+                    if(CustomPlayer.AgentEmoting?):
+                        Print(" Player is Emoting")
+                        Sleep(1.0)
+                      if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentEmoteCount := CurrentPlayerStats.Emote.CurrentValue):
+                            PlayerStatsManager.RecordPlayerStat(Agent, StatType.Emote, ?Value := CurrentEmoteCount + 1)
+                            CustomPlayer.CheckForDanceRankUp(CurrentEmoteCount + 1)
+                            Print("{CurrentEmoteCount + 1} emote seconds")
+                    else:
+                        Print(" Player Stopped Emoting")
+                        break
+        else:       
+            Print("Failed to get CustomPlayer")  
+
+    OnEliminationCompleted(ER:elimination_result):void=
+        Eliminated := ER.EliminatedCharacter
+        Eliminator := ER.EliminatingCharacter
+       if (FC := Eliminator?, Agent := FC.GetAgent[] , EliminatedAgent := Eliminated.GetAgent[]):
+        if(Agent = EliminatedAgent):
+            Print("Eliminator and Eliminated are the same Do nothing")
+        else:    
+         if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentEliminations := CurrentPlayerStats.Kills.CurrentValue,CurrentTrolling := CurrentPlayerStats.Trolling.CurrentValue):
+            if(CustomPlayer := PlayerUiMap[Agent]): 
+              CustomPlayer.CheckForEliminationsRankUp(CurrentEliminations) 
+              CustomPlayer.CheckForTrolling(EliminatedAgent) 
+              if(SessionTrolling := CustomPlayer.GetHighestTrollingValueInSession(), SessionTrolling > CurrentTrolling):
+                PlayerStatsManager.RecordPlayerStat(Agent, StatType.Trolling, ?Value :=  SessionTrolling)
+                CustomPlayer.CheckForTrollingRankUp(SessionTrolling)
+              else:
+                Print("Trolling Value is not higher than Current Trolling Value")
+                 
+            Trackers.EliminationTracker.Reset(Agent)
+            Trackers.EliminationTracker.Remove(Agent)
+            Trackers.EliminationTracker.Assign(Agent)
+            Accolade.Elimination.Award(Agent)
+
+            Print("{CurrentEliminations} eliminations")
+         
+    OnPistolCompleted(Agent:agent):void=
+        if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentPistolKills := CurrentPlayerStats.PistolKills.CurrentValue):
+            PlayerStatsManager.RecordPlayerStat(Agent, StatType.PistolKills, ?Value := CurrentPistolKills + 1)
+            if. CustomPlayer := PlayerUiMap[Agent] then. CustomPlayer.CheckForPistolKillsRankUp(CurrentPistolKills + 1) else. Print("Failed to get CustomPlayer")
+            Trackers.PistolTracker.Reset(Agent)
+            Trackers.PistolTracker.Remove(Agent)
+            Trackers.PistolTracker.Assign(Agent)
+            Print("{CurrentPistolKills + 1} pistol kills")
+     
+    OnShotgunCompleted(Agent:agent):void=
+        if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentShotgunKills := CurrentPlayerStats.ShotGunKills.CurrentValue):
+            PlayerStatsManager.RecordPlayerStat(Agent, StatType.ShotGunKills, ?Value := CurrentShotgunKills + 1)
+            if. CustomPlayer := PlayerUiMap[Agent] then. CustomPlayer.CheckForShotgunKillsRankUp(CurrentShotgunKills + 1) else. Print("Failed to get CustomPlayer")
+            Trackers.ShotgunTracker.Reset(Agent)
+            Trackers.ShotgunTracker.Remove(Agent)
+            Trackers.ShotgunTracker.Assign(Agent)
+            Print("{CurrentShotgunKills + 1} shotgun kills")
+ 
+    OnSMGCompleted(Agent:agent):void=
+        if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentSMGKills := CurrentPlayerStats.SmgKills.CurrentValue):
+            PlayerStatsManager.RecordPlayerStat(Agent, StatType.SmgKills, ?Value := CurrentSMGKills + 1)
+            if. CustomPlayer := PlayerUiMap[Agent] then. CustomPlayer.CheckForSmgKillsRankUp(CurrentSMGKills + 1) else. Print("Failed to get CustomPlayer")
+            Trackers.SMGTracker.Reset(Agent)
+            Trackers.SMGTracker.Remove(Agent)
+            Trackers.SMGTracker.Assign(Agent)
+            Print("{CurrentSMGKills + 1} SMG kills")
+
+    OnARCompleted(Agent:agent):void=
+        if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentARKills := CurrentPlayerStats.RifleKills.CurrentValue):
+            PlayerStatsManager.RecordPlayerStat(Agent, StatType.RifleKills, ?Value := CurrentARKills + 1)
+            if. CustomPlayer := PlayerUiMap[Agent] then. CustomPlayer.CheckForRifleKillsRankUp(CurrentARKills + 1) else. Print("Failed to get CustomPlayer")
+            Trackers.ARTracker.Reset(Agent)
+            Trackers.ARTracker.Remove(Agent)
+            Trackers.ARTracker.Assign(Agent)
+            Print("{CurrentARKills + 1} AR kills")
+
+    OnSniperCompleted(Agent:agent):void=
+        if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentSniperKills := CurrentPlayerStats.SniperKills.CurrentValue):
+            PlayerStatsManager.RecordPlayerStat(Agent, StatType.SniperKills, ?Value := CurrentSniperKills + 1)
+            if. CustomPlayer := PlayerUiMap[Agent] then. CustomPlayer.CheckForSniperKillsRankUp(CurrentSniperKills + 1) else. Print("Failed to get CustomPlayer")
+            Trackers.SniperTracker.Reset(Agent)
+            Trackers.SniperTracker.Remove(Agent)
+            Trackers.SniperTracker.Assign(Agent)
+            Print("{CurrentSniperKills + 1} sniper kills")
+
+    OnMeleeCompleted(Agent:agent):void=
+        if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentMeleeKills := CurrentPlayerStats.MeleeKills.CurrentValue):
+            PlayerStatsManager.RecordPlayerStat(Agent, StatType.MeleeKills, ?Value := CurrentMeleeKills + 1)
+            if. CustomPlayer := PlayerUiMap[Agent] then. CustomPlayer.CheckForMeleeKillsRankUp(CurrentMeleeKills + 1) else. Print("Failed to get CustomPlayer")
+            Trackers.MeleeTracker.Reset(Agent)
+            Trackers.MeleeTracker.Remove(Agent)
+            Trackers.MeleeTracker.Assign(Agent)
+            Print("{CurrentMeleeKills + 1} melee kills")
+
+    OnHeadShotCompleted(Agent:agent):void=
+        if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentHeadShotKills := CurrentPlayerStats.HeadShotKills.CurrentValue):
+            PlayerStatsManager.RecordPlayerStat(Agent, StatType.HeadShotKills, ?Value := CurrentHeadShotKills + 1)
+            if. CustomPlayer := PlayerUiMap[Agent] then. CustomPlayer.CheckForHeadShotKillsRankUp(CurrentHeadShotKills + 1) else. Print("Failed to get CustomPlayer")
+            Trackers.HeadShotTracker.Reset(Agent)
+            Trackers.HeadShotTracker.Remove(Agent)
+            Trackers.HeadShotTracker.Assign(Agent)
+            Accolade.HeadShotElimination.Award(Agent)
+            Print("{CurrentHeadShotKills + 1} headshot kills")
+
+    OnRunTrackerCompleted(Agent:agent):void=
+        if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentRunDistance := CurrentPlayerStats.Run.CurrentValue):
+            PlayerStatsManager.RecordPlayerStat(Agent, StatType.Run, ?Value := CurrentRunDistance + 100)
+            if. CustomPlayer := PlayerUiMap[Agent] then. CustomPlayer.CheckForRunRankUp(CurrentRunDistance + 100) else. Print("Failed to get CustomPlayer")
+            Trackers.RunTracker.Reset(Agent)
+            Trackers.RunTracker.Remove(Agent)
+            Trackers.RunTracker.Assign(Agent)
+            Accolade.RunningBonus.Award(Agent)
+            Print("{CurrentRunDistance + 100} meters ran")
+
+    JumpEventSubscribe(Agent:agent):void=
+       if (FC :fort_character= Agent.GetFortCharacter[]):
+            FC.JumpedEvent().Subscribe(OnJumped)        
+
+    OnJumped(FC : fort_character):void=
+       if( Agent:=FC.GetAgent[]):  
+        if(Player := player[Agent],CustomPlayer := PlayerUiMap[Player]):
+            if(CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent],CurrentJumpCount := CurrentPlayerStats.Jumps.CurrentValue):
+                PlayerStatsManager.RecordPlayerStat(Agent, StatType.Jumps, ?Value := CurrentJumpCount + 1)
+                CustomPlayer.CheckForJumpsRankUp(CurrentJumpCount + 1)
+                Print("{CurrentJumpCount + 1} jumps")
+            else:
+                Print("Failed to get CurrentPlayerStats")
+        else:
+            Print("Failed to get Player")        
+
+   #-------------------------------------------------------------- 
+
+   # Add UI To Players Screen 
+    AddUiButtonClicked(Agent:agent):void=
+        if(CustomPlayer := PlayerUiMap[Agent],CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent]):
+
+           if(CustomPlayer.WidgetAlreadyAdded?):
+                Print("Widget Already Added")
+           else:
+              CustomPlayer.CreatePageUI(Agent, CurrentPlayerStats.Elo.CurrentValue,CurrentPlayerStats)
+
+   #Add Player to The Ui Map           
+    OnPlayerAdded(Agent:agent):void= 
+            if(CurrentPlayerStatsPrev := PlayerStatsManager.GetPlayerStats[Agent]):   
+                if(CurrentPlayerStatsPrev.Version <> Verse_Persistence.Version):
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.Version, ?Value := Verse_Persistence.Version)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.Elo, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.Kills, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.Deaths, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.PistolKills, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.ShotGunKills, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.RifleKills, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.SmgKills, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.SniperKills, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.MeleeKills, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.HeadShotKills, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.Jumps, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.Run, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.Emote, ?Value := 0)
+                        PlayerStatsManager.RecordPlayerStat(Agent, StatType.Trolling, ?Value := 0)
+            if: 
+                PlayerObj := player[Agent]
+            then:
+                if(PlayerExists := PlayerUiMap[PlayerObj]):
+                    Print("Player Already Added") 
+                else: 
+                    if:
+                        FC := Agent.GetFortCharacter[]
+                    then:  
+                        CustomPlayer:Achievements_Custom_Player= Achievements_Custom_Player{Player := PlayerObj, ColorSettings := Color_settings}
+                        option:
+                            set PlayerUiMap[PlayerObj] = CustomPlayer
+                        CustomPlayer.InitCustomDenoms(EliminationDenominators,PistolKillsDenominators,ShotgunKillsDenominators,RifleKillsDenominators,SmgKillsDenominators,SniperKillsDenominators,MeleeKillsDenominators,HeadShotKillsDenominators,JumpsDenominators,RunDenominators,EmoteDenominators,TrollingDenominators,EloDenominators) 
+                        CustomPlayer.InitColors()    
+                        set CustomPlayer.AchievementUnlockedSound = General_Settings.AchievementUnlockedSound
+                        JumpEventSubscribe(Agent)    
+                        if. Player := player[Agent] then. PlayerStatsManager.InitializePlayer(Player)
+                        if. CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent] then.  CustomPlayer.InitRanks(CurrentPlayerStats) else. Print("Failed to get CurrentPlayerStats")
+                        CustomPlayer.InitQueue()
+                        CustomPlayer.InitPopUpCanvas()
+                            Print("Player Added")
+                        FC.EliminatedEvent().Subscribe(OnEliminationCompleted)
+                    else:
+                        Print("Failed to get FortCharacter")
+
+#-------------------------------------------------------------- CUSTOM PLAYER CODE --------------------------------------------------------------
+
+EliminationTextures : []texture = array:
+    Terminator.Terminator_1,
+    Terminator.Terminator_2,
+    Terminator.Terminator_3,
+    Terminator.Terminator_4,
+    Terminator.Terminator_5,
+    Terminator.Terminator_6,
+    Terminator.Terminator_7,
+    Terminator.Terminator_8,
+    Terminator.Terminator_9,
+    Terminator.Terminator_10
+PistolKillsTextures : []texture = array:
+    Cowboy.Cowboy_1,
+    Cowboy.Cowboy_2,
+    Cowboy.Cowboy_3,
+    Cowboy.Cowboy_4,
+    Cowboy.Cowboy_5,
+    Cowboy.Cowboy_6,
+    Cowboy.Cowboy_7,
+    Cowboy.Cowboy_8,
+    Cowboy.Cowboy_9,
+    Cowboy.Cowboy_10
+ShotgunKillsTextures : []texture = array:
+    Pump_Master.Pump_Master_1,
+    Pump_Master.Pump_Master_2,
+    Pump_Master.Pump_Master_3,
+    Pump_Master.Pump_Master_4,
+    Pump_Master.Pump_Master_5,
+    Pump_Master.Pump_Master_6,
+    Pump_Master.Pump_Master_7,
+    Pump_Master.Pump_Master_8,
+    Pump_Master.Pump_Master_9,
+    Pump_Master.Pump_Master_10
+RifleKillsTextures : []texture = array:
+        Sharp_Shooter.Sharp_Shooter_1,
+        Sharp_Shooter.Sharp_Shooter_2,
+        Sharp_Shooter.Sharp_Shooter_3,
+        Sharp_Shooter.Sharp_Shooter_4,
+        Sharp_Shooter.Sharp_Shooter_5,
+        Sharp_Shooter.Sharp_Shooter_6,
+        Sharp_Shooter.Sharp_Shooter_7,
+        Sharp_Shooter.Sharp_Shooter_8,
+        Sharp_Shooter.Sharp_Shooter_9,
+        Sharp_Shooter.Sharp_Shooter_10
+SmgKillsTextures : []texture = array:
+    Sprayer.Sprayer_1,
+    Sprayer.Sprayer_2,
+    Sprayer.Sprayer_3,
+    Sprayer.Sprayer_4,
+    Sprayer.Sprayer_5,
+    Sprayer.Sprayer_6,
+    Sprayer.Sprayer_7,
+    Sprayer.Sprayer_8,
+    Sprayer.Sprayer_9,
+    Sprayer.Sprayer_10
+SniperKillsTextures : []texture = array:
+    Precision.Precision_1,
+    Precision.Precision_2,
+    Precision.Precision_3,
+    Precision.Precision_4,
+    Precision.Precision_5,
+    Precision.Precision_6,
+    Precision.Precision_7,
+    Precision.Precision_8,
+    Precision.Precision_9,
+    Precision.Precision_10
+    
+MeleeKillsTextures : []texture = array:
+    Close_Combat.Close_Combat_1,
+    Close_Combat.Close_Combat_2,
+    Close_Combat.Close_Combat_3,
+    Close_Combat.Close_Combat_4,
+    Close_Combat.Close_Combat_5,
+    Close_Combat.Close_Combat_6,
+    Close_Combat.Close_Combat_7,
+    Close_Combat.Close_Combat_8,
+    Close_Combat.Close_Combat_9,
+    Close_Combat.Close_Combat_10
+HeadShotKillsTextures : []texture = array:
+    Headshot.Headshot_1,
+    Headshot.Headshot_2,
+    Headshot.Headshot_3,
+    Headshot.Headshot_4,
+    Headshot.Headshot_5,
+    Headshot.Headshot_6,
+    Headshot.Headshot_7,
+    Headshot.Headshot_8,
+    Headshot.Headshot_9,
+    Headshot.Headshot_10
+JumpsTextures : []texture = array:
+    Athletic.Athletic_1,
+    Athletic.Athletic_2,
+    Athletic.Athletic_3,
+    Athletic.Athletic_4,
+    Athletic.Athletic_5,
+    Athletic.Athletic_6,
+    Athletic.Athletic_7,
+    Athletic.Athletic_8,
+    Athletic.Athletic_9,
+    Athletic.Athletic_10
+RunTextures : []texture = array: 
+    The_Flash.The_Flash_1,
+    The_Flash.The_Flash_2,
+    The_Flash.The_Flash_3,
+    The_Flash.The_Flash_4,
+    The_Flash.The_Flash_5,
+    The_Flash.The_Flash_6,
+    The_Flash.The_Flash_7,
+    The_Flash.The_Flash_8,
+    The_Flash.The_Flash_9,
+    The_Flash.The_Flash_10
+EmoteTextures : []texture = array:
+    Happy.Happy_1,
+    Happy.Happy_2,
+    Happy.Happy_3,
+    Happy.Happy_4,
+    Happy.Happy_5,
+    Happy.Happy_6,
+    Happy.Happy_7,
+    Happy.Happy_8,
+    Happy.Happy_9,
+    Happy.Happy_10
+TrollingTextures : []texture = array:
+    Troll.Troll_1,
+    Troll.Troll_2,
+    Troll.Troll_3,
+    Troll.Troll_4,
+    Troll.Troll_5,
+    Troll.Troll_6,
+    Troll.Troll_7,
+    Troll.Troll_8,
+    Troll.Troll_9,
+    Troll.Troll_10
+   # Put your rank images here IN ORDER !!
+RankTexturesForSystem : []texture = array:
+        
+    RanksImages.Unknown_Rank_Graphic
+    RanksImages.Bronze_Rank_1
+    RanksImages.Bronze_Rank_2
+    RanksImages.Bronze_Rank_3
+    RanksImages.Silver_Rank_1
+    RanksImages.Silver_Rank_2
+    RanksImages.Silver_Rank_3
+    RanksImages.Gold_Rank_1
+    RanksImages.Gold_Rank_2
+    RanksImages.Gold_Rank_3
+    RanksImages.Platinum_Rank_1
+    RanksImages.Platinum_Rank_2
+    RanksImages.Platinum_Rank_3
+    RanksImages.Diamond_Rank_1
+    RanksImages.Diamond_Rank_2
+    RanksImages.Diamond_Rank_3
+    RanksImages.Elite_Rank
+    RanksImages.Champion_Rank
+    RanksImages.Unreal_Rank
+    <# TexturePath #>
+RankHighlightTexturesArray : []texture = array:
+    RankHighlightTextures.Bronze_1
+    RankHighlightTextures.Bronze_2
+    RankHighlightTextures.Bronze_3
+    RankHighlightTextures.Silver_1
+    RankHighlightTextures.Silver_2
+    RankHighlightTextures.Silver_3
+    RankHighlightTextures.Gold_1
+    RankHighlightTextures.Gold_2
+    RankHighlightTextures.Gold_3
+    RankHighlightTextures.Plat_1
+    RankHighlightTextures.Plat_2
+    RankHighlightTextures.Plat_3
+    RankHighlightTextures.Diamond_1
+    RankHighlightTextures.Diamond_2
+    RankHighlightTextures.Diamond_3
+    RankHighlightTextures.Elite
+    RankHighlightTextures.Champion
+    RankHighlightTextures.Unreal
+    <# TexturePath #>
+RankTexturesArray:[]texture = array:
+    RankTextures.Bronze_1
+    RankTextures.Bronze_2
+    RankTextures.Bronze_3
+    RankTextures.Silver_1
+    RankTextures.Silver_2
+    RankTextures.Silver_3
+    RankTextures.Gold_1
+    RankTextures.Gold_2
+    RankTextures.Gold_3
+    RankTextures.Platinum_1
+    RankTextures.Platinum_2
+    RankTextures.Platinum_3
+    RankTextures.Diamond_1
+    RankTextures.Diamond_2
+    RankTextures.Diamond_3
+    RankTextures.Elite
+    RankTextures.Champion
+    RankTextures.Unreal
+    # Put your rank images here IN ORDER !!  
+    
+PopUpRunning := class<concrete>:
+   AnimationComplete<public>:event() = event(){}
+
+   SendSignal():void=
+       AnimationComplete.Signal()
+queue<public>(t:type) := class:
+    Elements<internal>:[]t = array{}
+    
+    Enqueue<public>(NewElement:t):queue(t)=
+        queue(t){Elements := Elements + array{NewElement}}
+    
+    Dequeue<public>()<decides><transacts>:tuple(queue(t),t)=
+        FirstElement := Front[]
+        (queue(t){Elements := Elements.RemoveElement[0]}, FirstElement)
+    
+    Size<public>()<transacts>:int=
+        Elements.Length
+    
+    IsEmpty<public>()<decides><transacts>:void=
+        Size() = 0
+    
+    Front<public>()<decides><transacts>:t=
+        Elements[0]
+    
+    Rear<public>()<decides><transacts>:t=
+        Elements[Elements.Length - 1]
+        
+CreateQueue<public><constructor>(InitialElements:[]t where t:type) := queue(t):
+    Elements := InitialElements       
+      
+Achievements_Custom_Player:=class<unique>:
+    var PistolKillsDenominators :[]int = array{5, 10, 20, 50, 75, 150, 200, 300, 400, 500}
+    var PistolKillsNames :[]string= array{"COWBOY 1", "COWBOY 2", "COWBOY 3", "COWBOY 4", "COWBOY 5", "COWBOY6", "COWBOY 7", "COWBOY 8", "COWBOY 9", "COWBOY 10"}
+
+    var ShotgunKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+    var ShotgunKillsNames :[]string= array{"SHOTTY 1", "SHOTTY 2", "SHOTTY 3", "SHOTTY 4", "SHOTTY 5", "SHOTTY 6", "SHOTTY 7", "SHOTTY 8", "SHOTTY 9", "SHOTTY 10"}
+
+    var RifleKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+    var RifleKillsNames :[]string= array{"SHARP SHOOTER 1", "SHARP SHOOTER 2", "SHARP SHOOTER 3", "SHARP SHOOTER 4", "SHARP SHOOTER 5", "SHARP SHOOTER 6", "SHARP SHOOTER 7", "SHARP SHOOTER 8", "SHARP SHOOTER 9", "SHARP SHOOTER 10"}
+
+    var SmgKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+    var SmgKillsNames :[]string= array{"SPRAY AND PRAY 1", "SPRAY AND PRAY 2", "SPRAY AND PRAY 3", "SPRAY AND PRAY 4", "SPRAY AND PRAY 5", "SPRAY AND PRAY 6", "SPRAY AND PRAY 7", "SPRAY AND PRAY 8", "SPRAY AND PRAY 9", "SPRAY AND PRAY 10"}
+
+    var SniperKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+    var SniperKillsNames :[]string= array{"DEADEYE 1", "DEADEYE 2", "DEADEYE 3", "DEADEYE 4", "DEADEYE 5", "DEADEYE 6", "DEADEYE 7", "DEADEYE 8", "DEADEYE 9", "DEADEYE 10"}
+
+    var MeleeKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+    var MeleeKillsNames :[]string= array{"CLOSE COMBAT 1", "CLOSE COMBAT 2", "CLOSE COMBAT 3", "CLOSE COMBAT 4", "CLOSE COMBAT 5", "CLOSE COMBAT 6", "CLOSE COMBAT 7", "CLOSE COMBAT 8", "CLOSE COMBAT 9", "CLOSE COMBAT 10"}
+
+    var HeadShotKillsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+    var HeadShotKillsNames :[]string= array{"HEAD HUNTER 1", "HEAD HUNTER 2", "HEAD HUNTER 3", "HEAD HUNTER 4", "HEAD HUNTER 5", "HEAD HUNTER 6", "HEAD HUNTER 7", "HEAD HUNTER 8", "HEAD HUNTER 9", "HEAD HUNTER 10"}
+
+    var JumpsDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+    var JumpsNames :[]string= array{"ATHLETIC 1", "ATHLETIC 2", "ATHLETIC 3", "ATHLETIC 4", "ATHLETIC 5", "ATHLETIC 6", "ATHLETIC 7", "ATHLETIC 8", "ATHLETIC 9", "ATHLETIC 10"}
+
+    var RunDenominators :[]int = array{100, 500, 2000,4000,5000, 10000, 15000, 20000, 50000, 100000}
+    var RunNames :[]string= array{"THE FLASH 1" , "THE FLASH 2"  , "THE FLASH 3"  , "THE FLASH 4"  , "THE FLASH 5"  , "THE FLASH 6"  , "THE FLASH 7"  , "THE FLASH 8"  , "THE FLASH 9"  , "THE FLASH 10"  }
+
+    var EmoteDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+    var EmoteNames :[]string= array{"DANCER 1", "DANCER 2", "DANCER 3", "DANCER 4", "DANCER 5", "DANCER 6", "DANCER 7", "DANCER 8", "DANCER 9", "DANCER 10"}
+
+    var TrollingDenominators :[]int = array{2, 4, 6, 10, 15, 20, 30, 50, 75, 100}
+    var TrollingNames :[]string= array{"TROLL 1", "TROLL 2", "TROLL 3", "TROLL 4", "TROLL 5", "TROLL 6", "TROLL 7", "TROLL 8", "TROLL 9", "TROLL 10"}
+
+    var EloDenominators :[]int = array{ 25, 75, 175, 250, 450, 650, 750, 900, 1200, 1400, 1750 , 2000, 2200,2500, 3000, 3400, 4000,5000}
+    var RankNames :[]string= array{"UNRANKED","BRONZE 1", "BRONZE 2", "BRONZE 3", "SILVER 1", "SILVER 2", "SILVER 3", "GOLD 1", "GOLD 2", "GOLD 3", "PLATINUM 1", "PLATINUM 2", "PLATINUM 3", "DIAMOND 1", "DIAMOND 2", "DIAMOND 3", "ELITE", "CHAMPION", "UNREAL"}
+
+    var EliminationDenominators :[]int = array{5, 50, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000}
+    var EliminationNames :[]string= array{"TERMINATOR 1", "TERMINATOR 2", "TERMINATOR 3", "TERMINATOR 4", "TERMINATOR 5", "TERMINATOR 6", "TERMINATOR 7", "TERMINATOR 8", "TERMINATOR 9", "TERMINATOR 10"}
+
+    Player:player
+    ColorSettings:Color_Settings
+    StringToMessage<localizes>(value:string)<computes> : message = "{value}"
+    var Trolling: [agent]int =map{}
+    var AgentEmoting : logic = false
+    var WidgetAlreadyAdded : logic = false
+    var ButtonForPage : [text_button_base]overlay = map{}
+    var CurrentPageShown : overlay = overlay{}
+    var MaybePageCanvas : ?canvas = false
+    
+    AchievementsMessage<localizes>:message = "ACHIEVEMENTS"
+     # PistolKillsDenominators,ShotgunKillsDenominators,RifleKillsDenominators,SmgKillsDenominators,SniperKillsDenominators,MeleeKillsDenominators,HeadShotKillsDenominators,JumpsDenominators,RunDenominators,EmoteDenominators,TrollingDenominators
+    InitCustomDenoms(ElimArray:[]int,PistolKillsArray : []int, ShotgunKills : []int, RifleKills : []int,SmgKills: []int,SniperKills:[]int,MeleeKills:[]int, HeadShotKills : []int, JumpsArray: []int,RunArray:[]int,EmoteArray:[]int,TrollingArray:[]int,EloArray: []int):void=
+        set EliminationDenominators = ElimArray
+        set PistolKillsDenominators = PistolKillsArray
+        set ShotgunKillsDenominators = ShotgunKills
+        set RifleKillsDenominators = RifleKills
+        set SmgKillsDenominators = SmgKills
+        set SniperKillsDenominators = SniperKills
+        set MeleeKillsDenominators = MeleeKills
+        set HeadShotKillsDenominators = HeadShotKills
+        set JumpsDenominators = JumpsArray
+        set RunDenominators = RunArray
+        set EmoteDenominators = EmoteArray
+        set TrollingDenominators = TrollingArray
+        set EloDenominators = EloArray
+
+        
+
+  #Trolling Code ------------------------------
+    CheckForTrolling(Agent:agent):void=
+        if(PlayerExists := Trolling[Agent]):
+            if(set Trolling[Agent] += 1):
+            Print("Player Exists Trolling is {PlayerExists + 1}")
+        else:
+            if( set Trolling[Agent] = 1  ){ Print("Player Does not Exist Trolling is {1}")} else. Print("Error")
+
+    GetHighestTrollingValueInSession()<transacts>:int=
+        var HighestTrolling : int = 0
+        for (Agent->TrollingValue : Trolling):
+            if(TrollingValue > HighestTrolling):
+                set HighestTrolling = TrollingValue
+        return HighestTrolling
+     
+  #-----DynamicUI--------------------------------------
+    
+    var RankTexture : texture_block = texture_block{DefaultImage:=RanksImages.Bronze_Rank_1, DefaultDesiredSize:=vector2{X:=225.0, Y:=180.0}}
+
+   #Navigation Dynamic UI
+    var NavigationProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=12.5},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var NavigationProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=222.0, Y:=12.5}, DefaultColor:=  color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var RankTextBlock : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+   #Achievements Dynamic UI
+    var EliminationProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var EliminationProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var EliminationTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var EliminationDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var EliminationImage : texture_block = texture_block{DefaultImage:= Terminator.Terminator_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var EliminationProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+     
+    var PistolKillsProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var PistolKillsProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var PistolKillsTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var PistolKillsDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var PistolKillsImage : texture_block = texture_block{DefaultImage:= Cowboy.Cowboy_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var PistolKillsProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+    var ShotgunKillsProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var ShotgunKillsProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var ShotgunKillsTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var ShotgunKillsDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var ShotgunKillsImage : texture_block = texture_block{DefaultImage:= Pump_Master.Pump_Master_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var ShotgunKillsProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+    var RifleKillsProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var RifleKillsProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var RifleKillsTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var RifleKillsDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var RifleKillsImage : texture_block = texture_block{DefaultImage:= Sharp_Shooter.Sharp_Shooter_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var RifleKillsProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+    var SmgKillsProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var SmgKillsProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var SmgKillsTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var SmgKillsDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var SmgKillsImage : texture_block = texture_block{DefaultImage:= Sprayer.Sprayer_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var SmgKillsProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+    var SniperKillsProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var SniperKillsProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var SniperKillsTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var SniperKillsDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var SniperKillsImage : texture_block = texture_block{DefaultImage:= Precision.Precision_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var SniperKillsProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+    var MeleeKillsProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var MeleeKillsProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var MeleeKillsTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var MeleeKillsDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var MeleeKillsImage : texture_block = texture_block{DefaultImage:= Close_Combat.Close_Combat_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var MeleeKillsProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+    var HeadShotKillsProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var HeadShotKillsProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var HeadShotKillsTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var HeadShotKillsDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var HeadShotKillsImage : texture_block = texture_block{DefaultImage:= Headshot.Headshot_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var HeadShotKillsProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    
+    var JumpsProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var JumpsProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var JumpsTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var JumpsDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var JumpsImage : texture_block = texture_block{DefaultImage:= Athletic.Athletic_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var JumpsProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+    var RunProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var RunProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var RunTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var RunDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var RunImage : texture_block = texture_block{DefaultImage:= The_Flash.The_Flash_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var RunProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+   
+    var EmoteProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var EmoteProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var EmoteTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var EmoteDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var EmoteImage : texture_block = texture_block{DefaultImage:= Happy.Happy_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var EmoteProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+    var TrollingProgressBar: color_block = color_block{DefaultDesiredSize := vector2{Y:=10.0},DefaultColor:=color{R:=1.0,G:=1.0,B:=0.0}}
+    var TrollingProgressBorder : color_block = color_block{DefaultDesiredSize:=vector2{X:=355.0, Y:=10.0}, DefaultColor:=color{R:=0.614583,G:=0.614583,B:=0.614583}}
+    var TrollingTitle : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var TrollingDescription : text_block = text_block{DefaultTextColor:= NamedColors.White}
+    var TrollingImage : texture_block = texture_block{DefaultImage:= Troll.Troll_1, DefaultDesiredSize:=vector2{X:=135.0, Y:=32.0}}
+    var TrollingProgress : text_block = text_block{DefaultTextColor:= NamedColors.White}
+
+<#
+    # Instances of each stat_type you can use in your experience
+
+        Kills<public>:kill_stat = kill_stat{}
+        Deaths<public>:death_stat = death_stat{}
+        Elo<public>:elo_stat = elo_stat{}
+        Version<public>:version_stat = version_stat{}
+        PistolKills<public>:pistol_kill_stat = pistol_kill_stat{}
+        ShotGunKills<public>:shotgun_kill_stat = shotgun_kill_stat{}
+        RifleKills<public>:rifle_kill_stat = rifle_kill_stat{}
+        SmgKills<public>:smg_kill_stat = smg_kill_stat{}
+        SniperKills<public>:sniper_kill_stat = sniper_kill_stat{}
+        MeleeKills<public>:melee_kill_stat = melee_kill_stat{}
+        HeadShotKills<public>:headshot_kill_stat = headshot_kill_stat{}
+        Jumps<public>:jump_stat = jump_stat{}
+        Run<public>:run_stat = run_stat{}
+        Emote<public>:emote_stat = emote_stat{}
+        Trolling<public>:trolling_stat = trolling_stat{}
+
+#>
+   #Binary Search Test For Determining Rank  
+
+    # Function to determine rank based on a score using binary search
+    determineRank(Numerator: int,Denominators:[]int):int=
+        var index :int= binarySearch(Denominators, Numerator, 0, Denominators.Length - 1)
+            return index
+    
+    #Helper function to perform binary search
+    binarySearch(arr: []int, target: int, left: int, right: int):int=
+        if (left > right) {
+            return left
+        }
+        var Mid:int=0
+        if(mid : int = Floor((left + right) / 2)):
+            set Mid = mid
+        if (target < arr[Mid]):
+            return binarySearch(arr, target, left, Mid - 1)
+        else:
+            return binarySearch(arr, target, Mid + 1, right)
+    
+    # -----------------------------------------------------------------------   
+    #Function to Deternine Progress Bar Width
+    CaculateProgressBarWidth(total_width:float, numerator:int, denominator:int):float=
+          p:= (numerator * 1.0) / (denominator * 1.0)
+          width_image1 :=  p * total_width
+          Print("{numerator}/ {denominator} = {p} * {total_width} = {width_image1}")
+      return width_image1
+
+    CaculateProgressBarWidthForRank(total_width:float, numerator:int, denominator:int):float=
+        # Ensure the current rank is within the bounds of the array
+        if (EloRank < 0 or EloRank >= EloDenominators.Length):
+            return 0.0  # Return 0 width if the rank is invalid
+        Print("Elo Rank: {EloRank}")
+        # Calculate the progress within the current rank
+        previous_threshold  : int = if. Temp := EloDenominators[EloRank - 1] then.  Temp else.  0
+        RealNumerator := (numerator - previous_threshold) * 1.0 
+        RealDenominator := (denominator - previous_threshold)  * 1.0
+        progress_within_rank :=  ( RealNumerator   / RealDenominator) 
+        
+        # Calculate the width of the progress bar
+        width_image1 :=total_width *  progress_within_rank 
+        Print("Previous Denominator: {previous_threshold}  RealNumerator: {RealNumerator} RealDenominator: {RealDenominator} Progress Within Rank: {progress_within_rank}  Width Image1: {width_image1}")
+        Print("{RealNumerator} / {RealDenominator} = {total_width} * {progress_within_rank}  = {width_image1}")
+        return width_image1
+    
+    OnPageClick(WM : widget_message):void=
+        # Hiding old page
+        CurrentPageShown.SetVisibility(widget_visibility.Collapsed)
+        if(PageToShow := ButtonForPage[WM.Source]):
+            # Showing new page
+            PageToShow.SetVisibility(widget_visibility.Visible)
+            set CurrentPageShown = PageToShow
+
+    InitializeNavigation(Elo:int):void=
+          RankIndex := determineRank(Elo, EloDenominators)
+          if. RankName := RankNames[RankIndex] then. RankTextBlock.SetText(StringToMessage(RankName))
+            if. Texture := RankTexturesForSystem[RankIndex] then. RankTexture.SetImage(Texture)
+          if(CurrentDemoninator := EloDenominators[RankIndex]):
+            ProgressWidth := CaculateProgressBarWidthForRank(222.0, Elo, CurrentDemoninator)
+            NavigationProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=12.5})
+        
+    <#
+        @editable NavigationBackgroundColor : ?color = false
+        @editable NavigationProgressFillColor : ?color = false
+        @editable NavigationProgressBackgroundColor : ?color = false
+
+        @editable PageBackgroundColor  : ?color = false
+
+        @editable AchievementsBoxColors : ?color = false
+        @editable AchievementsProgressFillColors : ?color = false
+        @editable AchievementsProgressBackgroundColors : ?color = false
+
+        @editable RankBoxColor : ?color = false    
+     #>
+
+    InitColors():void=
+        NavigationProgressBar.SetColor( if. NavProgressFillColor := ColorSettings.NavigationProgressFillColor? then. NavProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        NavigationProgressBorder.SetColor( if. NavProgressBackgroundColor := ColorSettings.NavigationProgressBackgroundColor? then. NavProgressBackgroundColor else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        EliminationProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        EliminationProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        PistolKillsProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        PistolKillsProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        ShotgunKillsProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        ShotgunKillsProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        RifleKillsProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        RifleKillsProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        SmgKillsProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        SmgKillsProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        SniperKillsProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        SniperKillsProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        MeleeKillsProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        MeleeKillsProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        HeadShotKillsProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        HeadShotKillsProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        JumpsProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        JumpsProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        RunProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        RunProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        EmoteProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        EmoteProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+        TrollingProgressBar.SetColor( if. AchievementsProgressFillColor := ColorSettings.AchievementsProgressFillColors? then. AchievementsProgressFillColor else. color{R:=1.0,G:=1.0,B:=0.0})
+        TrollingProgressBorder.SetColor( if. AchievementsProgressBackgroundColors := ColorSettings.AchievementsProgressBackgroundColors? then. AchievementsProgressBackgroundColors else. color{R:=0.614583,G:=0.614583,B:=0.614583})
+         
+    InitAchievements(CurrentPlayerStats:player_stats_table):void=
+        CurrentElo :=  CurrentPlayerStats.Elo.CurrentValue
+        CurrentEliminations := CurrentPlayerStats.Kills.CurrentValue
+        CurrentShotgunKills := CurrentPlayerStats.ShotGunKills.CurrentValue
+        CurrentRifleKills := CurrentPlayerStats.RifleKills.CurrentValue
+        CurrentSniperKills := CurrentPlayerStats.SniperKills.CurrentValue
+        CurrentMeleeKills := CurrentPlayerStats.MeleeKills.CurrentValue
+        CurrentHeadShotKills := CurrentPlayerStats.HeadShotKills.CurrentValue
+        CurrentJumps := CurrentPlayerStats.Jumps.CurrentValue
+        CurrentRun := CurrentPlayerStats.Run.CurrentValue
+        CurrentEmote := CurrentPlayerStats.Emote.CurrentValue
+        CurrentTrolling := CurrentPlayerStats.Trolling.CurrentValue
+        CurrentPistolKills := CurrentPlayerStats.PistolKills.CurrentValue
+        CurrentSMGKills := CurrentPlayerStats.SmgKills.CurrentValue
+
+        RankIndex := determineRank(CurrentElo, EloDenominators)
+        set EloRank = RankIndex
+        InitRankPage(RankIndex)
+        EliminationIndex := determineRank(CurrentEliminations, EliminationDenominators)
+        if. EliminationName := EliminationNames[EliminationIndex] then. EliminationTitle.SetText(StringToMessage(EliminationName))
+        if(CurrentDemoninator := EliminationDenominators[EliminationIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentEliminations, CurrentDemoninator)
+            EliminationProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            EliminationProgress.SetText(StringToMessage("{CurrentEliminations}/{CurrentDemoninator}"))
+            EliminationDescription.SetText(StringToMessage("Get {CurrentDemoninator} eliminations"))
+            if. Texture := EliminationTextures[EliminationIndex] then. EliminationImage.SetImage(Texture)
+        else if( CurrentDemoninator := EliminationDenominators[9]):
+            Print("Elimination index : {EliminationIndex}")
+            Print("Max Rank")
+            if. EliminationName := EliminationNames[9] then. EliminationTitle.SetText(StringToMessage(EliminationName))
+            EliminationProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := EliminationTextures[9] then. EliminationImage.SetImage(Texture)
+            EliminationProgress.SetText(StringToMessage("{CurrentEliminations}/{CurrentDemoninator}"))
+            EliminationDescription.SetText(StringToMessage("Get {CurrentDemoninator} eliminations"))
+        RunIndex := determineRank(CurrentRun, RunDenominators)
+        if. RunName := RunNames[RunIndex] then. RunTitle.SetText(StringToMessage(RunName))
+        if(CurrentDemoninator := RunDenominators[RunIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentRun, CurrentDemoninator)
+            RunProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            RunProgress.SetText(StringToMessage("{CurrentRun}/{CurrentDemoninator}"))
+            RunDescription.SetText(StringToMessage("Run {CurrentDemoninator} meters"))
+            if. Texture := RunTextures[RunIndex] then. RunImage.SetImage(Texture)
+        else if( CurrentDemoninator := RunDenominators[9]):
+            Print("Run index : {RunIndex}")
+            Print("Max Rank")
+            if. RunName := RunNames[9] then. RunTitle.SetText(StringToMessage(RunName))
+            RunProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := RunTextures[9] then. RunImage.SetImage(Texture)
+            RunProgress.SetText(StringToMessage("{CurrentRun}/{CurrentDemoninator}"))
+            RunDescription.SetText(StringToMessage("Run {CurrentDemoninator} meters"))
+        JumpsIndex := determineRank(CurrentJumps, JumpsDenominators)
+        if. JumpsName := JumpsNames[JumpsIndex] then. JumpsTitle.SetText(StringToMessage(JumpsName))
+        if(CurrentDemoninator := JumpsDenominators[JumpsIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentJumps, CurrentDemoninator)
+            JumpsProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            JumpsProgress.SetText(StringToMessage("{CurrentJumps}/{CurrentDemoninator}"))
+            JumpsDescription.SetText(StringToMessage("Jump {CurrentDemoninator} times"))
+            if. Texture := JumpsTextures[JumpsIndex] then. JumpsImage.SetImage(Texture)
+        else if( CurrentDemoninator := JumpsDenominators[9]):
+            Print("Jumps index : {JumpsIndex}")
+            Print("Max Rank")
+            if. JumpsName := JumpsNames[9] then. JumpsTitle.SetText(StringToMessage(JumpsName))
+            JumpsProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := JumpsTextures[9] then. JumpsImage.SetImage(Texture)
+            JumpsProgress.SetText(StringToMessage("{CurrentJumps}/{CurrentDemoninator}"))
+            JumpsDescription.SetText(StringToMessage("Jump {CurrentDemoninator} times"))
+        HeadShotKillsIndex := determineRank(CurrentHeadShotKills, HeadShotKillsDenominators)
+        if. HeadShotKillsName := HeadShotKillsNames[HeadShotKillsIndex] then. HeadShotKillsTitle.SetText(StringToMessage(HeadShotKillsName))
+        if(CurrentDemoninator := HeadShotKillsDenominators[HeadShotKillsIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentHeadShotKills, CurrentDemoninator)
+            HeadShotKillsProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            HeadShotKillsProgress.SetText(StringToMessage("{CurrentHeadShotKills}/{CurrentDemoninator}"))
+            HeadShotKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} headshot eliminations"))
+            if. Texture := HeadShotKillsTextures[HeadShotKillsIndex] then. HeadShotKillsImage.SetImage(Texture)
+        else if( CurrentDemoninator := HeadShotKillsDenominators[9]):
+            Print("Headshot kill index : {HeadShotKillsIndex}")
+            Print("Max Rank")
+            if. HeadShotKillsName := HeadShotKillsNames[9] then. HeadShotKillsTitle.SetText(StringToMessage(HeadShotKillsName))
+            HeadShotKillsProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := HeadShotKillsTextures[9] then. HeadShotKillsImage.SetImage(Texture)
+            HeadShotKillsProgress.SetText(StringToMessage("{CurrentHeadShotKills}/{CurrentDemoninator}"))
+            HeadShotKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} headshot eliminations"))
+        MeleeKillsIndex := determineRank(CurrentMeleeKills, MeleeKillsDenominators)
+        if. MeleeKillsName := MeleeKillsNames[MeleeKillsIndex] then. MeleeKillsTitle.SetText(StringToMessage(MeleeKillsName))
+        if(CurrentDemoninator := MeleeKillsDenominators[MeleeKillsIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentMeleeKills, CurrentDemoninator)
+            MeleeKillsProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            MeleeKillsProgress.SetText(StringToMessage("{CurrentMeleeKills}/{CurrentDemoninator}"))
+            MeleeKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} melee eliminations"))
+            if. Texture := MeleeKillsTextures[MeleeKillsIndex] then. MeleeKillsImage.SetImage(Texture)
+        else if( CurrentDemoninator := MeleeKillsDenominators[9]):
+            Print("Melee kill index : {MeleeKillsIndex}")
+            Print("Max Rank")
+            if. MeleeKillsName := MeleeKillsNames[9] then. MeleeKillsTitle.SetText(StringToMessage(MeleeKillsName))
+            MeleeKillsProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := MeleeKillsTextures[9] then. MeleeKillsImage.SetImage(Texture)
+            MeleeKillsProgress.SetText(StringToMessage("{CurrentMeleeKills}/{CurrentDemoninator}"))
+            MeleeKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} melee eliminations"))    
+        SniperKillsIndex := determineRank(CurrentSniperKills, SniperKillsDenominators)
+        if. SniperKillsName := SniperKillsNames[SniperKillsIndex] then. SniperKillsTitle.SetText(StringToMessage(SniperKillsName))
+        if(CurrentDemoninator := SniperKillsDenominators[SniperKillsIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentSniperKills, CurrentDemoninator)
+            SniperKillsProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            SniperKillsProgress.SetText(StringToMessage("{CurrentSniperKills}/{CurrentDemoninator}"))
+            SniperKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} sniper eliminations"))
+            if. Texture := SniperKillsTextures[SniperKillsIndex] then. SniperKillsImage.SetImage(Texture)
+        else if( CurrentDemoninator := SniperKillsDenominators[9]):
+            Print("Sniper kill index : {SniperKillsIndex}")
+            Print("Max Rank")
+            if. SniperKillsName := SniperKillsNames[9] then. SniperKillsTitle.SetText(StringToMessage(SniperKillsName))
+            SniperKillsProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := SniperKillsTextures[9] then. SniperKillsImage.SetImage(Texture)
+            SniperKillsProgress.SetText(StringToMessage("{CurrentSniperKills}/{CurrentDemoninator}"))
+            SniperKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} sniper eliminations"))
+        SmgKillsIndex := determineRank(CurrentSMGKills, SmgKillsDenominators)
+        if. SmgKillsName := SmgKillsNames[SmgKillsIndex] then. SmgKillsTitle.SetText(StringToMessage(SmgKillsName))
+        if(CurrentDemoninator := SmgKillsDenominators[SmgKillsIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentSMGKills, CurrentDemoninator)
+            SmgKillsProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            SmgKillsProgress.SetText(StringToMessage("{CurrentSMGKills}/{CurrentDemoninator}"))
+            SmgKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} smg eliminations"))
+            if. Texture := SmgKillsTextures[SmgKillsIndex] then. SmgKillsImage.SetImage(Texture)
+        else if( CurrentDemoninator := SmgKillsDenominators[9]):
+            Print("SMG kill index : {SmgKillsIndex}")
+            Print("Max Rank")
+            if. SmgKillsName := SmgKillsNames[9] then. SmgKillsTitle.SetText(StringToMessage(SmgKillsName))
+            SmgKillsProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := SmgKillsTextures[9] then. SmgKillsImage.SetImage(Texture)
+            SmgKillsProgress.SetText(StringToMessage("{CurrentSMGKills}/{CurrentDemoninator}"))
+            SmgKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} smg eliminations"))
+        PistolKillsIndex := determineRank(CurrentPistolKills, PistolKillsDenominators)
+        if. PistolKillsName := PistolKillsNames[PistolKillsIndex] then. PistolKillsTitle.SetText(StringToMessage(PistolKillsName))
+        if(CurrentDemoninator := PistolKillsDenominators[PistolKillsIndex]):
+            Print("Pistol kill index : {PistolKillsIndex}")
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentPistolKills, CurrentDemoninator)
+            PistolKillsProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            PistolKillsProgress.SetText(StringToMessage("{CurrentPistolKills}/{CurrentDemoninator}"))
+            PistolKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} pistol eliminations"))
+            if. Texture := PistolKillsTextures[PistolKillsIndex] then. PistolKillsImage.SetImage(Texture)
+        else if(CurrentDemoninator := PistolKillsDenominators[9]):
+            Print("Pistol kill index : {PistolKillsIndex}")
+            Print("Max Rank")
+            if. PistolKillsName := PistolKillsNames[9] then. PistolKillsTitle.SetText(StringToMessage(PistolKillsName))
+            PistolKillsProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := PistolKillsTextures[9] then. PistolKillsImage.SetImage(Texture)
+            PistolKillsProgress.SetText(StringToMessage("{CurrentPistolKills}/{CurrentDemoninator}"))
+            PistolKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} pistol eliminations"))
+        RifleKillsIndex := determineRank(CurrentRifleKills, RifleKillsDenominators)
+        if. RifleKillsName := RifleKillsNames[RifleKillsIndex] then. RifleKillsTitle.SetText(StringToMessage(RifleKillsName))
+        if(CurrentDemoninator := RifleKillsDenominators[RifleKillsIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentRifleKills, CurrentDemoninator)
+            RifleKillsProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            RifleKillsProgress.SetText(StringToMessage("{CurrentRifleKills}/{CurrentDemoninator}"))
+            RifleKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} rifle eliminations"))
+            if. Texture := RifleKillsTextures[RifleKillsIndex] then. RifleKillsImage.SetImage(Texture)
+        else if(CurrentDemoninator := RifleKillsDenominators[9]):
+            Print("Rifle kill index : {RifleKillsIndex}")
+            Print("Max Rank")
+            if. RifleKillsName := RifleKillsNames[9] then. RifleKillsTitle.SetText(StringToMessage(RifleKillsName))
+            RifleKillsProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := RifleKillsTextures[9] then. RifleKillsImage.SetImage(Texture)
+            RifleKillsProgress.SetText(StringToMessage("{CurrentRifleKills}/{CurrentDemoninator}"))
+            RifleKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} rifle eliminations"))
+        ShotgunKillsIndex := determineRank(CurrentShotgunKills, ShotgunKillsDenominators)
+        if. ShotgunKillsName := ShotgunKillsNames[ShotgunKillsIndex] then. ShotgunKillsTitle.SetText(StringToMessage(ShotgunKillsName))
+        if(CurrentDemoninator := ShotgunKillsDenominators[ShotgunKillsIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentShotgunKills, CurrentDemoninator)
+            ShotgunKillsProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            ShotgunKillsProgress.SetText(StringToMessage("{CurrentShotgunKills}/{CurrentDemoninator}"))
+            ShotgunKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} shotgun eliminations"))
+            if. Texture := ShotgunKillsTextures[ShotgunKillsIndex] then. ShotgunKillsImage.SetImage(Texture)
+        else if(CurrentDemoninator := ShotgunKillsDenominators[9]):
+            Print("Shotgun kill index : {ShotgunKillsIndex}")
+            Print("Max Rank")
+            if. ShotgunKillsName := ShotgunKillsNames[9] then. ShotgunKillsTitle.SetText(StringToMessage(ShotgunKillsName))
+            ShotgunKillsProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := ShotgunKillsTextures[9] then. ShotgunKillsImage.SetImage(Texture)
+            ShotgunKillsProgress.SetText(StringToMessage("{CurrentShotgunKills}/{CurrentDemoninator}"))
+            ShotgunKillsDescription.SetText(StringToMessage("Get {CurrentDemoninator} shotgun eliminations"))
+        EmoteIndex := determineRank(CurrentEmote, EmoteDenominators)
+        if. EmoteName := EmoteNames[EmoteIndex] then. EmoteTitle.SetText(StringToMessage(EmoteName))
+        if(CurrentDemoninator := EmoteDenominators[EmoteIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentEmote, CurrentDemoninator)
+            EmoteProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            EmoteProgress.SetText(StringToMessage("{CurrentEmote}/{CurrentDemoninator}"))
+            EmoteDescription.SetText(StringToMessage("Emote for {CurrentDemoninator} seconds"))
+            if. Texture := EmoteTextures[EmoteIndex] then. EmoteImage.SetImage(Texture)
+        else if(CurrentDemoninator := EmoteDenominators[9]):
+            Print("Emote index : {EmoteIndex}")
+            Print("Max Rank")
+            if. EmoteName := EmoteNames[9] then. EmoteTitle.SetText(StringToMessage(EmoteName))
+            EmoteProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := EmoteTextures[9] then. EmoteImage.SetImage(Texture)
+            EmoteProgress.SetText(StringToMessage("{CurrentEmote}/{CurrentDemoninator}"))
+            EmoteDescription.SetText(StringToMessage("Emote for {CurrentDemoninator} seconds"))    
+
+        TrollingIndex := determineRank(CurrentTrolling, TrollingDenominators)
+        if. TrollingName := TrollingNames[TrollingIndex] then. TrollingTitle.SetText(StringToMessage(TrollingName))
+        if(CurrentDemoninator := TrollingDenominators[TrollingIndex]):
+            ProgressWidth := CaculateProgressBarWidth(355.0, CurrentTrolling, CurrentDemoninator)
+            TrollingProgressBar.SetDesiredSize(vector2{X:=ProgressWidth, Y:=10.0})
+            TrollingProgress.SetText(StringToMessage("{CurrentTrolling}/{CurrentDemoninator}"))
+            TrollingDescription.SetText(StringToMessage("Eliminate the same player {CurrentDemoninator} times  "))
+            if. Texture := TrollingTextures[TrollingIndex] then. TrollingImage.SetImage(Texture)
+        else if(CurrentDemoninator := TrollingDenominators[9]):
+            Print("Trolling index : {TrollingIndex}")
+            Print("Max Rank")
+            if. TrollingName := TrollingNames[9] then. TrollingTitle.SetText(StringToMessage(TrollingName))
+            TrollingProgressBar.SetDesiredSize(vector2{X:=355.0, Y:=10.0})
+            if. Texture := TrollingTextures[9] then. TrollingImage.SetImage(Texture)
+            TrollingProgress.SetText(StringToMessage("{CurrentTrolling}/{CurrentDemoninator}"))
+            TrollingDescription.SetText(StringToMessage("Eliminate the same player {CurrentDemoninator} times  "))
+    #Current Ranks
+    var EliminationsRank :int = 0
+    var RunRank :int = 0
+    var JumpsRank :int = 0
+    var HeadShotKillsRank :int = 0
+    var MeleeKillsRank :int = 0
+    var SniperKillsRank :int = 0
+    var SmgKillsRank :int = 0
+    var PistolKillsRank :int = 0
+    var RifleKillsRank :int = 0
+    var ShotgunKillsRank :int = 0
+    var EmoteRank :int = 0
+    var TrollingRank :int = 0
+    var EloRank :int = 0
+
+    InitRanks(Stats:player_stats_table):void=
+        set EliminationsRank = determineRank(Stats.Kills.CurrentValue, EliminationDenominators)
+        set RunRank = determineRank(Stats.Run.CurrentValue, RunDenominators)
+        set JumpsRank = determineRank(Stats.Jumps.CurrentValue, JumpsDenominators)
+        set HeadShotKillsRank = determineRank(Stats.HeadShotKills.CurrentValue, HeadShotKillsDenominators)
+        set MeleeKillsRank = determineRank(Stats.MeleeKills.CurrentValue, MeleeKillsDenominators)
+        set SniperKillsRank = determineRank(Stats.SniperKills.CurrentValue, SniperKillsDenominators)
+        set SmgKillsRank = determineRank(Stats.SmgKills.CurrentValue, SmgKillsDenominators)
+        set PistolKillsRank = determineRank(Stats.PistolKills.CurrentValue, PistolKillsDenominators)
+        set RifleKillsRank = determineRank(Stats.RifleKills.CurrentValue, RifleKillsDenominators)
+        set ShotgunKillsRank = determineRank(Stats.ShotGunKills.CurrentValue, ShotgunKillsDenominators)
+        set EmoteRank = determineRank(Stats.Emote.CurrentValue, EmoteDenominators)
+        set TrollingRank = determineRank(Stats.Trolling.CurrentValue, TrollingDenominators)
+     
+    CheckForEliminationsRankUp(Score:int):void=
+      if(ED :=EliminationDenominators[EliminationsRank], Score >= ED ):
+        if: 
+          Title := EliminationNames[EliminationsRank]
+          Description := "Get {ED} eliminations"
+          Texture := EliminationTextures[EliminationsRank]
+        then:
+           if(AchievementPopUpsRunning = true ):
+             set EliminationsRank += 1
+             AddAchievementToQueue( Title, Description, Texture)
+           else: 
+              set EliminationsRank += 1
+              AddAchievementToQueue( Title, Description, Texture) 
+              spawn. ShowAchievementPopups()
+                 
+    InitPopUpCanvas():void=
+        if(PlayerUI := GetPlayerUI[Player]):
+            PopupCanvas := MakeAchievementPopup()
+            set AchievementCanvas = PopupCanvas
+            PlayerUI.AddWidget(AchievementCanvas, player_ui_slot{InputMode := ui_input_mode.None})
+            AchievementCanvas.SetVisibility(widget_visibility.Collapsed)  
+
+    CheckForDanceRankUp(Score:int):void=
+      if(ED :=EmoteDenominators[EmoteRank], Score >= ED ):
+        if: 
+          Title := EmoteNames[EmoteRank]
+          Description := "Emote for {ED} seconds"
+          Texture := EmoteTextures[EmoteRank]
+        then:
+           if(AchievementPopUpsRunning = true):
+             set EmoteRank += 1       
+             AddAchievementToQueue( Title, Description, Texture)
+           else: 
+              set EmoteRank += 1
+              AddAchievementToQueue( Title, Description, Texture) 
+              spawn. ShowAchievementPopups()
+
+    CheckForRunRankUp(Score:int):void=
+        if(ED :=RunDenominators[RunRank], Score >= ED ):
+           if: 
+            Title := RunNames[RunRank]
+            Description := "Run {ED} meters"
+            Texture := RunTextures[RunRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set RunRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set RunRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForJumpsRankUp(Score:int):void=
+        if(ED :=JumpsDenominators[JumpsRank], Score >= ED ):
+           if: 
+            Title := JumpsNames[JumpsRank]
+            Description := "Jump {ED} times"
+            Texture := JumpsTextures[JumpsRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set JumpsRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set JumpsRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForHeadShotKillsRankUp(Score:int):void=
+        if(ED :=HeadShotKillsDenominators[HeadShotKillsRank], Score >= ED ):
+           if: 
+            Title := HeadShotKillsNames[HeadShotKillsRank]
+            Description := "Get {ED} headshot eliminations"
+            Texture := HeadShotKillsTextures[HeadShotKillsRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set HeadShotKillsRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set HeadShotKillsRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForMeleeKillsRankUp(Score:int):void=
+        if(ED :=MeleeKillsDenominators[MeleeKillsRank], Score >= ED ):
+           if: 
+            Title := MeleeKillsNames[MeleeKillsRank]
+            Description := "Get {ED} melee eliminations"
+            Texture := MeleeKillsTextures[MeleeKillsRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set MeleeKillsRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set MeleeKillsRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForSniperKillsRankUp(Score:int):void=
+        if(ED :=SniperKillsDenominators[SniperKillsRank], Score >= ED ):
+           if: 
+            Title := SniperKillsNames[SniperKillsRank]
+            Description := "Get {ED} sniper eliminations"
+            Texture := SniperKillsTextures[SniperKillsRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set SniperKillsRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set SniperKillsRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForSmgKillsRankUp(Score:int):void=
+        if(ED :=SmgKillsDenominators[SmgKillsRank], Score >= ED ):
+           if: 
+            Title := SmgKillsNames[SmgKillsRank]
+            Description := "Get {ED} smg eliminations"
+            Texture := SmgKillsTextures[SmgKillsRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set SmgKillsRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set SmgKillsRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForPistolKillsRankUp(Score:int):void=
+        if(ED :=PistolKillsDenominators[PistolKillsRank], Score >= ED ):
+           if: 
+            Title := PistolKillsNames[PistolKillsRank]
+            Description := "Get {ED} pistol eliminations"
+            Texture := PistolKillsTextures[PistolKillsRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set PistolKillsRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set PistolKillsRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForRifleKillsRankUp(Score:int):void=
+        if(ED :=RifleKillsDenominators[RifleKillsRank], Score >= ED ):
+           if: 
+            Title := RifleKillsNames[RifleKillsRank]
+            Description := "Get {ED} rifle eliminations"
+            Texture := RifleKillsTextures[RifleKillsRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set RifleKillsRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set RifleKillsRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForShotgunKillsRankUp(Score:int):void=
+        if(ED :=ShotgunKillsDenominators[ShotgunKillsRank], Score >= ED ):
+           if: 
+            Title := ShotgunKillsNames[ShotgunKillsRank]
+            Description := "Get {ED} shotgun eliminations"
+            Texture := ShotgunKillsTextures[ShotgunKillsRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set ShotgunKillsRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set ShotgunKillsRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForTrollingRankUp(Score:int):void=
+        if(ED :=TrollingDenominators[TrollingRank], Score >= ED ):
+           if: 
+            Title := TrollingNames[TrollingRank]
+            Description := "Eliminate the same player {ED} times"
+            Texture := TrollingTextures[TrollingRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set TrollingRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set TrollingRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+
+    CheckForEloRankUp(Score:int):void=
+        if(ED :=EloDenominators[EloRank], Score >= ED ):
+           if: 
+            Title := RankNames[EloRank]
+            Description := "Get {ED} Elo"
+            Texture := RankTexturesForSystem[EloRank]
+           then:
+             if(AchievementPopUpsRunning = true):
+                 set EloRank += 1
+                 AddAchievementToQueue( Title, Description, Texture)
+             else: 
+                set EloRank += 1
+                AddAchievementToQueue( Title, Description, Texture) 
+                spawn. ShowAchievementPopups()
+    # -----------------------------------------------------------------------
+    var ControlChangeSubscription:?cancelable = false
+    CreatePageUI(Agent : agent,Score:int,CurrentPlayerStats:player_stats_table):void=
+        if(PlayerUI := GetPlayerUI[player[Agent]],FC:= Player.GetFortCharacter[]):
+            temp := FC.EliminatedEvent().Subscribe(RemoveUIOnElimed)
+            set ControlChangeSubscription = option{temp}
+
+            RankIndex := determineRank(CurrentPlayerStats.Elo.CurrentValue, EloDenominators)
+            set EloRank = RankIndex
+            PageCanvas := GetMainCanvas()
+            InitializeNavigation(Score)
+            InitAchievements(CurrentPlayerStats)
+            set MaybePageCanvas = option{PageCanvas}
+            set WidgetAlreadyAdded = true
+            PageCanvas.SetVisibility(widget_visibility.Visible)
+            PlayerUI.AddWidget(PageCanvas, player_ui_slot{InputMode := ui_input_mode.All})   
+        else: 
+            Print("Player UI not found")   
+
+    # Removing UI
+    RemoveUI(WM : widget_message):void=
+        if(PlayerUI := GetPlayerUI[WM.Player], PageCanvas := MaybePageCanvas?):
+            # Making it invisible first so it appears quicker
+            set WidgetAlreadyAdded = false
+            PageCanvas.SetVisibility(widget_visibility.Hidden)
+            PlayerUI.RemoveWidget(PageCanvas)    
+
+    RemoveUIOnElimed(ER:elimination_result):void=
+                if(PlayerUi := GetPlayerUI[Player],Canvas:=MaybePageCanvas?):
+                      set WidgetAlreadyAdded = false
+                      Canvas.SetVisibility(widget_visibility.Hidden)
+                      PlayerUi.RemoveWidget(Canvas)
+                      if(Subscription := ControlChangeSubscription?):
+                        Subscription.Cancel()
+                    Print("UI Removed")
+                    
+    MakeNavigationOverlay():overlay=
+        ExitButton: button_loud = button_loud{DefaultText:=ExitMessage}
+        ExitButton.OnClick().Subscribe(RemoveUI)
+        AchievementsButton.OnClick().Subscribe(OnPageClick)
+        RanksButton.OnClick().Subscribe(OnPageClick)
+        RankTextBlock.SetText(StringToMessage("Bronze l"))
+        ExitButton.SetText(StringToMessage("EXIT"))
+        AchievementsButton.SetText(StringToMessage("ACHIEVEMENTS"))
+        RanksButton.SetText(StringToMessage("RANKS"))
+        ProgressBarOverlay:=overlay:
+            Slots:=array:
+                overlay_slot:
+                    Widget := NavigationProgressBorder
+                overlay_slot:
+                    Widget := NavigationProgressBar
+                    HorizontalAlignment:= horizontal_alignment.Left
+                     VerticalAlignment:= vertical_alignment.Fill
+
+        MainStackBox:=stack_box:
+            Orientation:=orientation.Vertical
+            Slots:=array:
+                stack_box_slot:
+                  Widget := RankTexture
+                  HorizontalAlignment:= horizontal_alignment.Center
+                  VerticalAlignment:= vertical_alignment.Fill
+                  Padding:=margin{Left:= 50.0, Right:=50.0, Top:=50.0, Bottom:=50.0}
+                stack_box_slot:
+                  Widget:= ProgressBarOverlay
+                  HorizontalAlignment:= horizontal_alignment.Center
+                  VerticalAlignment:= vertical_alignment.Fill
+                stack_box_slot:
+                  Widget:= RankTextBlock
+                  HorizontalAlignment:= horizontal_alignment.Center
+                  VerticalAlignment:= vertical_alignment.Fill
+                  Padding:=margin{Top:=10.0}
+                stack_box_slot:
+                   Widget := AchievementsButton
+                    Padding := margin{Left:=50.000000,Top:=50.000000,Right:=50.000000,Bottom:=0.000000}
+                    HorizontalAlignment:= horizontal_alignment.Fill
+                    VerticalAlignment:= vertical_alignment.Fill
+                stack_box_slot:
+                    Widget:= RanksButton
+                    Padding:= margin{Left:=60.000000,Top:=30.000000,Right:=60.000000,Bottom:=70.000000}
+                    HorizontalAlignment:= horizontal_alignment.Fill
+                    VerticalAlignment:= vertical_alignment.Fill
+                stack_box_slot:
+                    Widget:= ExitButton
+                    Padding:= margin{Left:=60.0,Top:=0.0,Right:=60.0,Bottom:=0.0}
+                    HorizontalAlignment:= horizontal_alignment.Fill
+                    VerticalAlignment:= vertical_alignment.Fill
+        NavigationOverlay := overlay:
+           Slots:=array:
+              overlay_slot:
+                 Widget:= texture_block{DefaultImage := Background.reflectgradient, DefaultTint:= if. NavBG := ColorSettings.NavigationBackgroundColor? then. NavBG  else. color{R:=0.025,G:=0.025,B:=0.025} }
+                 VerticalAlignment:= vertical_alignment.Fill
+                 HorizontalAlignment:= horizontal_alignment.Fill
+              overlay_slot:
+                  Widget:= MainStackBox
+                  HorizontalAlignment:= horizontal_alignment.Fill
+                  VerticalAlignment:= vertical_alignment.Fill
+      return NavigationOverlay
+   MakeSingleAchievementOverlay(Title:text_block,Description:text_block,Progress:text_block,Image:texture_block,Progressbar:color_block,ProgressBorder:color_block):overlay=
+        ProgressBarOverlay:=overlay:
+            Slots:=array:
+                overlay_slot:
+                    Widget := ProgressBorder
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Center
+
+                overlay_slot:
+                    Widget := Progressbar
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Center
+        ProgressStackBox:=stack_box:
+           Orientation:=orientation.Horizontal
+           Slots:=array:
+                stack_box_slot:
+                    Widget:=ProgressBarOverlay       
+                    HorizontalAlignment:= horizontal_alignment.Fill
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=0.0}
+                stack_box_slot:
+                    Widget:= Progress
+                    HorizontalAlignment:= horizontal_alignment.Right
+                    VerticalAlignment:= vertical_alignment.Bottom     
+                    Padding:=margin{Left:=8.0, Top:=0.0, Right:=0.0, Bottom:=0.0}
+       
+       ChildStackBox:=stack_box:
+         Orientation:=orientation.Vertical
+          Slots:=array:
+             stack_box_slot:
+                 Widget:= Title
+                 HorizontalAlignment:= horizontal_alignment.Left
+                 VerticalAlignment:= vertical_alignment.Fill
+                 Padding:=margin{Left:=0.0, Top:=0.0, Right:=5.0, Bottom:=0.0}
+             stack_box_slot:
+                 Widget:= Description
+                 HorizontalAlignment:= horizontal_alignment.Fill
+                 VerticalAlignment:= vertical_alignment.Fill
+                 Padding:=margin{Left:=0.0, Top:=0.0, Right:=5.0, Bottom:=0.0}  
+            stack_box_slot:
+                Widget:=ProgressStackBox 
+                HorizontalAlignment:= horizontal_alignment.Fill
+                VerticalAlignment:= vertical_alignment.Fill
+                Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=0.0}
+
+       MainStackBox:=stack_box:
+           Orientation:=orientation.Horizontal
+           Slots:=array:
+                stack_box_slot:
+                     Widget:= Image
+                     HorizontalAlignment:= horizontal_alignment.Fill
+                     VerticalAlignment:= vertical_alignment.Fill
+                     Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=0.0}
+                stack_box_slot:
+                     Widget:= ChildStackBox
+                     HorizontalAlignment:= horizontal_alignment.Fill
+                     VerticalAlignment:= vertical_alignment.Fill
+                     Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=0.0}
+        
+             
+       var MainOverlay: overlay = overlay:
+            Slots:=array:
+                overlay_slot:
+                    Widget:= color_block{DefaultDesiredSize:=vector2{X:=650.0, Y:=120.0}, DefaultColor:= if. AchBoxColor := ColorSettings.AchievementsBoxColors? then. AchBoxColor else. color{R:=0.015625,G:=0.015625,B:=0.015625}}
+                    HorizontalAlignment:= horizontal_alignment.Fill
+                    VerticalAlignment:= vertical_alignment.Fill
+                
+                overlay_slot:
+                    Widget:= MainStackBox
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+        
+       
+   MakeAchievementOverlay():overlay=
+                        AchievementChildbox2:=stack_box:
+                            Orientation:=orientation.Vertical
+                            Slots:=array:
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(MeleeKillsTitle,MeleeKillsDescription,MeleeKillsProgress,MeleeKillsImage,MeleeKillsProgressBar,MeleeKillsProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(HeadShotKillsTitle,HeadShotKillsDescription,HeadShotKillsProgress,HeadShotKillsImage,HeadShotKillsProgressBar,HeadShotKillsProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(JumpsTitle,JumpsDescription,JumpsProgress,JumpsImage,JumpsProgressBar,JumpsProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(RunTitle,RunDescription,RunProgress,RunImage,RunProgressBar,RunProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(EmoteTitle,EmoteDescription,EmoteProgress,EmoteImage,EmoteProgressBar,EmoteProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(TrollingTitle,TrollingDescription,TrollingProgress,TrollingImage,TrollingProgressBar,TrollingProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                        AchievementChildBox1:=stack_box:
+                            Orientation:=orientation.Vertical
+                            Slots:=array:
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(EliminationTitle,EliminationDescription,EliminationProgress,EliminationImage,EliminationProgressBar,EliminationProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(PistolKillsTitle,PistolKillsDescription,PistolKillsProgress,PistolKillsImage,PistolKillsProgressBar,PistolKillsProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(ShotgunKillsTitle,ShotgunKillsDescription,ShotgunKillsProgress,ShotgunKillsImage,ShotgunKillsProgressBar,ShotgunKillsProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(RifleKillsTitle,RifleKillsDescription,RifleKillsProgress,RifleKillsImage,RifleKillsProgressBar,RifleKillsProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(SmgKillsTitle,SmgKillsDescription,SmgKillsProgress,SmgKillsImage,SmgKillsProgressBar,SmgKillsProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                                stack_box_slot:
+                                    Widget:= MakeSingleAchievementOverlay(SniperKillsTitle,SniperKillsDescription,SniperKillsProgress,SniperKillsImage,SniperKillsProgressBar,SniperKillsProgressBorder)
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=10.0}
+                        AchievementMainStackbox:=stack_box:
+                            Orientation:=orientation.Horizontal
+                            Slots:=array:
+                                stack_box_slot:
+                                    Widget:= AchievementChildBox1
+                                    HorizontalAlignment:= horizontal_alignment.Center
+                                    VerticalAlignment:= vertical_alignment.Center
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=10.0, Bottom:=8.0}
+                                stack_box_slot:
+                                    Widget:= AchievementChildbox2
+                                    HorizontalAlignment:= horizontal_alignment.Center
+                                    VerticalAlignment:= vertical_alignment.Center
+                                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=8.0}
+                        var MainOverlay : overlay = overlay:
+                            Slots:=array:
+                                overlay_slot:
+                                    Widget:= color_block{DefaultColor:= if. PageBGColor := ColorSettings.PageBackgroundColor? then. PageBGColor else. color{R:=0.0,G:=0.0,B:=0.0 },  DefaultOpacity:= 0.85}
+                                    HorizontalAlignment:= horizontal_alignment.Fill
+                                    VerticalAlignment:= vertical_alignment.Fill
+                                overlay_slot:
+                                    Widget := text_block{DefaultText:= StringToMessage("ACHIEVEMENTS"), DefaultTextColor:= NamedColors.White}    
+                                    HorizontalAlignment:= horizontal_alignment.Left
+                                    VerticalAlignment:= vertical_alignment.Top
+                                    Padding:=margin{Left:=40.0, Top:=40.0, Right:=40.0, Bottom:=40.0}
+                                overlay_slot:
+                                    Widget:= AchievementMainStackbox
+                                    HorizontalAlignment:= horizontal_alignment.Left
+                                    VerticalAlignment:= vertical_alignment.Center
+                                    Padding:=margin{Left:=40.0, Top:=0.0, Right:=0.0, Bottom:=0.0}  
+            set CurrentPageShown = MainOverlay                   
+            if(set ButtonForPage[AchievementsButton] = MainOverlay){}     
+            return MainOverlay
+
+   var AchievementsButton: button_regular = button_regular{}
+   var RanksButton: button_regular = button_regular{}       
+   RanksMessage<localizes>:message = "RANKS"
+   ExitMessage<localizes>:message = "EXIT"    
+
+   GetMainCanvas():canvas=
+      MainOverlay := overlay:
+            Slots:=array:
+                overlay_slot:
+                    Widget:= MakeAchievementOverlay()
+                    HorizontalAlignment:= horizontal_alignment.Fill
+                    VerticalAlignment:= vertical_alignment.Fill
+                overlay_slot:
+                    Widget := MakeRanksOverlay()
+                    HorizontalAlignment:= horizontal_alignment.Fill
+                    VerticalAlignment:= vertical_alignment.Fill
+      MainStackBox:=stack_box:
+          Orientation:=orientation.Horizontal
+          Slots:=array:
+              stack_box_slot:
+                  Widget:= MakeNavigationOverlay()
+                  VerticalAlignment:= vertical_alignment.Fill
+              stack_box_slot:
+                  Widget:= MainOverlay
+                  VerticalAlignment:= vertical_alignment.Fill    
+                  HorizontalAlignment:= horizontal_alignment.Fill
+                  Distribution:= option. 1.0 
+
+      var Canvas : canvas = canvas:
+            Slots:=array:
+                canvas_slot:
+                    Widget:= MainStackBox
+                    Anchors := anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X:= 1.0, Y := 1.0}}
+                    Alignment:= vector2{X:=0.0, Y:=0.0}
+                    SizeToContent:=true
+                   
+     return Canvas
+
+
+   var AchievementsQueue : ?queue(tuple(string,string,texture)) = false
+   var AchievementPopUpsRunning : logic = false
+   var AchievementCanvas : canvas = canvas{}
+   var PopUpArray : []tuple(string,string,texture) = array{}
+
+   InitQueue():void=
+    MyQueue := CreateQueue(PopUpArray)
+    set AchievementsQueue = option{MyQueue}
+   PopUps : PopUpRunning = PopUpRunning{}
+
+   AddAchievementToQueue(Achievement:tuple(string,string,texture)):void=
+        if(Queue:=AchievementsQueue?):
+            NewQ:=Queue.Enqueue(Achievement)
+            set  AchievementsQueue = option{NewQ}
+            Print("Achievement added to queue Queue Size: {NewQ.Size()}")
+        else:
+            Print("Queue not initialized")
+   var AchievementUnlockedSound :  audio_player_device = audio_player_device{}
+   ShowAchievementPopups()<suspends>:void=
+     Print("Show AChievemnt Popups")
+     set AchievementPopUpsRunning = true 
+     loop:
+      if(Queue:=AchievementsQueue?):
+       Print("Queue Size: {Queue.Size()}")
+        if(Queue.Size() = 0):
+            
+            Print("Queue is empty")
+            set AchievementPopUpsRunning = false
+            break
+        else:   
+            if(PopUp:=Queue.Dequeue[]):
+                 Print("Starting new popup")
+                 spawn. PopUpAnimation(PopUp)
+                 set AchievementsQueue = option{PopUp(0)}
+                 Print("Awaiting for animation to finish before showing next popup")
+                 AchievementUnlockedSound.Play(Player)
+                 PopUps.AnimationComplete.Await()
+                 Print("Animation Finished")
+
+   PopUpAnimation(Data:tuple(queue(tuple([]char,[]char,texture)),tuple([]char,[]char,texture)))<suspends>:void=
+        var x: float = 120.0
+        var y: float = 96.0
+        CurrentAchievement.SetDesiredSize(vector2{X:=x, Y:=y})
+        TitleAchievement.SetTextOpacity(1.0)
+        DescriptionAchievement.SetTextOpacity(1.0)
+        TestStackBox.SetVisibility(widget_visibility.Visible)
+         Print("Showing Popup")
+         OldData:= Data(1)
+         Title:= OldData(0)
+         Description:= OldData(1)
+         Texture:= OldData(2)
+         CurrentAchievement.SetImage(Texture)
+         TitleAchievement.SetText(StringToMessage(Title))
+         DescriptionAchievement.SetText(StringToMessage(Description))
+         ArrayOfFloats :  []type{_X:float where 0.000000 <= _X, _X <= 1.000000} = array{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}
+         BackwardsArrayOfFloats :  []type{_X:float where 0.000000 <= _X, _X <= 1.000000} = array{1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0}
+        loop:
+            Sleep(0.0)
+                set x += 20.0
+                set y += 16.0
+                CurrentAchievement.SetDesiredSize(vector2{X:=x, Y:=y})
+                if(x >= 180.0):
+                    break
+        loop:  
+            Sleep(0.0)
+            set x -= 20.0
+            set y -= 16.0
+            CurrentAchievement.SetDesiredSize(vector2{X:=x, Y:=y})
+            if(x <= 120.0):
+                break                
+       Sleep(2.0)
+       sync:
+         loop:  
+           Sleep(0.0)
+           set x -= 10.0
+           set y -= 8.0
+           CurrentAchievement.SetDesiredSize(vector2{X:=x, Y:=y})
+           if(x <= 0.0):
+               break                
+       
+         for(Float:BackwardsArrayOfFloats):
+                TitleAchievement.SetTextOpacity(Float)
+                DescriptionAchievement.SetTextOpacity(Float)
+                Sleep(0.05)
+      TestStackBox.SetVisibility(widget_visibility.Collapsed)
+      PopUps.SendSignal()
+    
+      
+    
+         
+   var TestStackBox : stack_box = stack_box{Orientation:=orientation.Vertical}
+   
+   var CurrentAchievement : texture_block = texture_block{DefaultImage:= Terminator.Terminator_1, DefaultDesiredSize:= vector2{X:=125.0, Y:=100.0}}
+   var TitleAchievement : text_block =  text_block{ DefaultTextColor:= NamedColors.White}
+   var DescriptionAchievement : text_block =  text_block{ DefaultTextColor:= NamedColors.White}
+   
+    MakeAchievementPopup():canvas=
+            TitleAchievement.SetText(StringToMessage("Title Test"))
+            DescriptionAchievement.SetText(StringToMessage("Description Test"))
+            stackbox:stack_box=stack_box:
+                Orientation:=orientation.Vertical
+                Slots:=array:
+                    stack_box_slot:
+                        Widget:= CurrentAchievement
+                        HorizontalAlignment:= horizontal_alignment.Center
+                        VerticalAlignment:= vertical_alignment.Top
+                        Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=5.0}
+                    stack_box_slot:
+                        Widget:= TitleAchievement
+                        HorizontalAlignment:= horizontal_alignment.Center
+                        VerticalAlignment:= vertical_alignment.Fill
+                        Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=0.0}
+                    stack_box_slot:
+                        Widget:= DescriptionAchievement
+                        HorizontalAlignment:= horizontal_alignment.Center
+                        VerticalAlignment:= vertical_alignment.Center
+                        Padding:=margin{Left:=0.0, Top:=5.0, Right:=0.0, Bottom:=0.0}
+            var Canvas : canvas = canvas:
+                Slots:=array:
+                    canvas_slot:
+                        Widget:= stackbox
+                        Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.237493}, Maximum := vector2{X:= 0.5, Y := 0.237493}}
+                        Alignment:= vector2{X:=0.5, Y:=0.5}
+                        SizeToContent:=true            
+        stackbox.SetVisibility(widget_visibility.Collapsed)  
+        set TestStackBox = stackbox
+        return Canvas
+        
+# Canvas for the Rank page ----------------------------------------------
+    InitRankPage(Index:int):void=
+        var   Index2 : int = 0
+        var RanksArrayTextures : []texture_block = array:
+            Bronze1TextureBlock
+            Bronze2TextureBlock
+            Bronze3TextureBlock
+            Silver1TextureBlock
+            Silver2TextureBlock
+            Silver3TextureBlock
+            Gold1TextureBlock
+            Gold2TextureBlock
+            Gold3TextureBlock
+            Platinum1TextureBlock
+            Platinum2TextureBlock
+            Platinum3TextureBlock
+            Diamond1TextureBlock
+            Diamond2TextureBlock
+            Diamond3TextureBlock
+            EliteTextureBlock
+            ChampionTextureBlock
+            UnrealTextureBlock
+        if(Index = 0): 
+          
+            #do nothing unranked
+        
+        else:
+            for(RanksTexture:RanksArrayTextures):
+                if( RanksTexture <> RanksArrayTextures[Index - 1]):
+                    if.  UnhighlightedTexture := RankTexturesArray[Index2] then. RanksTexture.SetImage(UnhighlightedTexture)
+                        set Index2 += 1
+                else:
+                    if.  HighlightedTexture := RankHighlightTexturesArray[Index2]   then   RanksTexture.SetImage(HighlightedTexture)
+                        set Index2 += 1
+             
+            
+    var Bronze1TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Bronze_1, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Bronze2TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Bronze_2, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Bronze3TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Bronze_3, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Silver1TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Silver_1, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Silver2TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Silver_2, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Silver3TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Silver_3, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Gold1TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Gold_1, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Gold2TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Gold_2, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Gold3TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Gold_3, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Platinum1TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Platinum_1, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Platinum2TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Platinum_2, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Platinum3TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Platinum_3, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Diamond1TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Diamond_1, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Diamond2TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Diamond_2, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var Diamond3TextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Diamond_3, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var EliteTextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Elite, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var ChampionTextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Champion, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+    var UnrealTextureBlock : texture_block = texture_block{DefaultImage:= RankTextures.Unreal, DefaultDesiredSize:=vector2{X:=125.0, Y:=100.0}}
+   
+   MakeStackbox(RankTitle:text_block, FirstRankImage:texture_block,SecondRankImage:texture_block,ThirdRankImage:texture_block):stack_box=
+      var StackBox : stack_box = stack_box:
+          Orientation:=orientation.Vertical
+            Slots:=array:
+            
+                stack_box_slot:
+                    Widget:= RankTitle
+                    HorizontalAlignment:= horizontal_alignment.Center
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=0.0}
+                stack_box_slot:
+                    Widget:= ThirdRankImage
+                    HorizontalAlignment:= horizontal_alignment.Center
+                    VerticalAlignment:= vertical_alignment.Center
+                    Padding:=margin{Left:=0.0, Top:=30.0, Right:=0.0, Bottom:=10.0}
+                stack_box_slot:
+                    Widget:= SecondRankImage
+                    HorizontalAlignment:= horizontal_alignment.Center
+                    VerticalAlignment:= vertical_alignment.Center
+                    Padding:=margin{Left:=0.0, Top:=30.0, Right:=0.0, Bottom:=10.0}
+                stack_box_slot:
+                    Widget:= FirstRankImage
+                    HorizontalAlignment:= horizontal_alignment.Center
+                    VerticalAlignment:= vertical_alignment.Center
+                    Padding:=margin{Left:=0.0, Top:=30.0, Right:=0.0, Bottom:=10.0}
+            
+    return StackBox     
+
+   MakeSingleStackBox(RankTitle:text_block, RankImage:texture_block):stack_box=
+        var StackBox : stack_box = stack_box:
+          Orientation:=orientation.Vertical
+            Slots:=array:
+                stack_box_slot:
+                    Widget:= RankTitle
+                    HorizontalAlignment:= horizontal_alignment.Center
+                    VerticalAlignment:= vertical_alignment.Center
+                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=0.0}
+                stack_box_slot:
+                    Widget:= RankImage
+                    HorizontalAlignment:= horizontal_alignment.Center
+                    VerticalAlignment:= vertical_alignment.Center
+                    Padding:=margin{Left:=0.0, Top:=30.0, Right:=0.0, Bottom:=10.0}
+    return StackBox
+
+   MakeRanksOverlay():overlay=
+        ChildStackBox := stack_box:
+            Orientation:=orientation.Horizontal
+             Slots:=array:
+                stack_box_slot:
+                    Widget:= MakeStackbox(text_block{DefaultText:= StringToMessage("BRONZE"),DefaultTextColor:= NamedColors.White},Bronze1TextureBlock,Bronze2TextureBlock,Bronze3TextureBlock)
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=20.0, Top:=50.0, Right:=20.0, Bottom:=20.0}
+                stack_box_slot:
+                    Widget:= MakeStackbox(text_block{DefaultText:= StringToMessage("SILVER"),DefaultTextColor:= NamedColors.White},Silver1TextureBlock,Silver2TextureBlock,Silver3TextureBlock)
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=20.0, Top:=50.0, Right:=20.0, Bottom:=20.0}
+                stack_box_slot:
+                    Widget:= MakeStackbox(text_block{DefaultText:= StringToMessage("GOLD"),DefaultTextColor:= NamedColors.White} ,Gold1TextureBlock,Gold2TextureBlock,Gold3TextureBlock)
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=20.0, Top:=50.0, Right:=20.0, Bottom:=20.0}
+                stack_box_slot:
+                    Widget:= MakeStackbox(text_block{DefaultText:= StringToMessage("PLATINUM"),DefaultTextColor:= NamedColors.White} ,Platinum1TextureBlock,Platinum2TextureBlock,Platinum3TextureBlock)
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=20.0, Top:=50.0, Right:=20.0, Bottom:=20.0}
+                stack_box_slot:
+                    Widget:= MakeStackbox(text_block{DefaultText:= StringToMessage("DIAMOND"),DefaultTextColor:= NamedColors.White},Diamond1TextureBlock,Diamond2TextureBlock,Diamond3TextureBlock)
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=20.0, Top:=50.0, Right:=20.0, Bottom:=20.0}
+                stack_box_slot:
+                    Widget:= MakeSingleStackBox(text_block{DefaultText:= StringToMessage("ELITE"),DefaultTextColor:= NamedColors.White},EliteTextureBlock)
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=20.0, Top:=50.0, Right:=20.0, Bottom:=20.0}
+                stack_box_slot:
+                    Widget:= MakeSingleStackBox(text_block{DefaultText:= StringToMessage("CHAMPION"),DefaultTextColor:= NamedColors.White},ChampionTextureBlock)
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=20.0, Top:=50.0, Right:=20.0, Bottom:=20.0}
+                stack_box_slot:
+                    Widget:= MakeSingleStackBox(text_block{DefaultText:= StringToMessage("UNREAL"),DefaultTextColor:= NamedColors.White}, UnrealTextureBlock)
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=20.0, Top:=50.0, Right:=20.0, Bottom:=20.0}
+        WrapperOverlay := overlay:
+            Slots:=array:
+                overlay_slot:
+                    Widget:= texture_block{DefaultImage := Background.reflectgradient, DefaultTint:= if. BoxColor := ColorSettings.RankBoxColor? then. BoxColor else. color{R:=0.025,G:=0.025,B:=0.025}, DefaultDesiredSize:=vector2{Y:=620.0 }}
+                    HorizontalAlignment:= horizontal_alignment.Fill
+                    VerticalAlignment:= vertical_alignment.Center
+                overlay_slot:
+                    Widget:= ChildStackBox
+                    HorizontalAlignment:= horizontal_alignment.Left
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding:=margin{Left:=0.0, Top:=0.0, Right:=0.0, Bottom:=0.0}    
+        MainStackBox := stack_box:
+            Orientation:=orientation.Horizontal
+             Slots:=array:
+                stack_box_slot:
+                    Widget:=WrapperOverlay
+                    HorizontalAlignment:= horizontal_alignment.Fill
+                    VerticalAlignment:= vertical_alignment.Fill
+                    Padding := margin{Left:=10.0, Top:=0.0, Right:=0.0, Bottom:=0.0}
+
+
+        var Overlay : overlay = overlay:
+                Slots:=array:
+                    overlay_slot:
+                        Widget := Widget:= color_block{DefaultColor:= if. PBC := ColorSettings.PageBackgroundColor? then. PBC else. color{R:=0.0,G:=0.0,B:=0.0 },  DefaultOpacity:= 0.85}
+                        HorizontalAlignment:= horizontal_alignment.Fill
+                        VerticalAlignment:= vertical_alignment.Fill
+                    overlay_slot:
+                        Widget := text_block{DefaultText:= StringToMessage("RANKS"), DefaultTextColor:= NamedColors.White}    
+                        HorizontalAlignment:= horizontal_alignment.Left
+                        VerticalAlignment:= vertical_alignment.Top
+                        Padding:=margin{Left:=40.0, Top:=40.0, Right:=40.0, Bottom:=40.0}
+                    overlay_slot:
+                        Widget:= MainStackBox
+                        HorizontalAlignment:= horizontal_alignment.Fill
+                        VerticalAlignment:= vertical_alignment.Top
+                        Padding:=margin{Left:=20.0, Top:=120.0, Right:=0.0, Bottom:=0.0} 
+      Overlay.SetVisibility(widget_visibility.Collapsed)  
+      if(set ButtonForPage[RanksButton] = Overlay){}                      
+      return Overlay
+
+
+# Player Stat manager --------------------------------------------------------------------
+
+
+ # Represents an abstract stat to update using RecordPlayerStat.
+ # The class has the unique specifier to make instances of the class comparable.
+ # The class has the computes specifier to be able to instantiate it at module-scope.
+ # The class has the abstract specifier so it cannot be instantiated directly, and
+ # requires subclasses to implement any non-initialized functions, like DebugString().
+stat_type := class<computes><unique><abstract>:
+    DebugString():string
+
+# This uses instances of stat_type subclasses instead of the enum type
+# so you can add more stat_types after the initial published version of the project.    
+StatType := module:
+
+    kill_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string =   "Kills"
+        
+    death_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "Deaths"    
+
+    elo_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "Deaths"     
+    version_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "Version"
+    pistol_kill_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "PistolKills"
+    shotgun_kill_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "ShotGunKills"
+    rifle_kill_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "RifleKills"
+    smg_kill_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "SmgKills"
+    sniper_kill_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "SniperKills"
+    melee_kill_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "MeleeKills"
+    headshot_kill_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "HeadShotKills"
+    jump_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "Jumps"
+    run_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "Run"
+    emote_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "Emote"
+    trolling_stat<public> := class<computes><unique>(stat_type):
+        DebugString<override>():string = "Trolling"
+  # The stat_type instances you can use in your experience.
+    # Instances of each stat_type you can use in your experience
+    Kills<public>:kill_stat = kill_stat{}
+    Deaths<public>:death_stat = death_stat{}
+    Elo<public>:elo_stat = elo_stat{}
+    Version<public>:version_stat = version_stat{}
+    PistolKills<public>:pistol_kill_stat = pistol_kill_stat{}
+    ShotGunKills<public>:shotgun_kill_stat = shotgun_kill_stat{}
+    RifleKills<public>:rifle_kill_stat = rifle_kill_stat{}
+    SmgKills<public>:smg_kill_stat = smg_kill_stat{}
+    SniperKills<public>:sniper_kill_stat = sniper_kill_stat{}
+    MeleeKills<public>:melee_kill_stat = melee_kill_stat{}
+    HeadShotKills<public>:headshot_kill_stat = headshot_kill_stat{}
+    Jumps<public>:jump_stat = jump_stat{}
+    Run<public>:run_stat = run_stat{}
+    Emote<public>:emote_stat = emote_stat{}
+    Trolling<public>:trolling_stat = trolling_stat{}
+  
+player_stats_table := class<final><persistable>:
+    # The version of the current stats table.
+    Version: int = 1
+
+    # The number of Kills for a player.
+    Kills:player_stat = player_stat{}
+
+    # The number of Deaths for a player.
+    Deaths:player_stat = player_stat{}
+
+    Elo: player_stat = player_stat{}
+
+    PistolKills: player_stat = player_stat{}
+
+    ShotGunKills: player_stat = player_stat{}
+
+    RifleKills: player_stat = player_stat{}
+
+    SmgKills: player_stat = player_stat{}
+
+    SniperKills: player_stat = player_stat{}
+
+    MeleeKills: player_stat = player_stat{}
+
+    HeadShotKills: player_stat = player_stat{}
+
+    Jumps: player_stat = player_stat{}
+
+    Run: player_stat = player_stat{}
+
+    Emote: player_stat = player_stat{}
+
+    Trolling: player_stat = player_stat{}
+
+    
+player_stat := class<final><persistable>:
+    # The current value of the player's stat.
+    CurrentValue:int = 0
+
+    # The highest value achieved so far.
+    HighestValue:int = 0
+
+    # Returns either the NewValue or HighestValue,
+    # whichever is higher.
+    SetHighestValue(NewValue:int)<transacts>:int=
+        if (NewValue > HighestValue):
+            NewValue
+        else:
+            HighestValue    
+MakeUpdatedPlayerStat<constructor>(OldStats:player_stat, NewValue:int)<transacts> := player_stat:
+    CurrentValue := NewValue
+    HighestValue := OldStats.SetHighestValue(NewValue)                
+    # Maps players to a table of their player stats.    
+MakePlayerStatsTable<constructor>(OldTable:player_stats_table)<transacts> := player_stats_table:
+        Version := OldTable.Version
+        Kills := OldTable.Kills
+        Deaths := OldTable.Deaths
+        Elo := OldTable.Elo
+        PistolKills := OldTable.PistolKills
+        ShotGunKills := OldTable.ShotGunKills
+        RifleKills := OldTable.RifleKills
+        SmgKills := OldTable.SmgKills
+        SniperKills := OldTable.SniperKills
+        MeleeKills := OldTable.MeleeKills
+        HeadShotKills := OldTable.HeadShotKills
+        Jumps := OldTable.Jumps
+        Run := OldTable.Run
+        Emote := OldTable.Emote
+        Trolling := OldTable.Trolling
+        
+        
+       
+
+# Manages and updates player_stat_tables for each player.
+player_stats_manager := class():
+
+    # Return the player_stats_table for the provided Agent.
+    GetPlayerStats(Agent:agent)<decides><transacts>:player_stats_table=
+        var PlayerStats:player_stats_table = player_stats_table{}
+        if:
+            Player := player[Agent]
+            PlayerStatsTable := PlayerStatsMap[Player]
+            set PlayerStats = MakePlayerStatsTable(PlayerStatsTable)
+        PlayerStats
+
+    # Initialize stats for all current players.
+    InitializeAllPlayers(Players:[]player):void =
+        for (Player : Players):
+            InitializePlayer(Player)
+
+    # Initialize stats for the given player.
+    InitializePlayer(Player:player):void=
+        if:
+            not PlayerStatsMap[Player]
+            set PlayerStatsMap[Player] = player_stats_table{}
+
+    # Update the given stat for the given player by creating a new
+    # player_stats_table and setting it in the PlayerStatsMap.
+    RecordPlayerStat(Agent:agent, Stat:stat_type, ?Value:int = 0):void=
+        if:
+            Player := player[Agent]
+            PlayerStatsTable := PlayerStatsMap[Player]
+            if(Stat = StatType.Elo):
+                EloStat := PlayerStatsTable.Elo
+                # Create a new player_stats_table with the updated score,
+                # then set that table in the PlayerStatsMap.
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    Elo := MakeUpdatedPlayerStat(EloStat, Value)
+            else if(Stat = StatType.Kills):
+                KillStat := PlayerStatsTable.Kills
+                # Create a new player_stats_table with the updated wins,
+                # then set that table in the PlayerStatsMap.
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    Kills := MakeUpdatedPlayerStat(KillStat, Value)
+            else if(Stat = StatType.Deaths):
+                DeathStat := PlayerStatsTable.Deaths
+
+                # Create a new player_stats_table with the updated wins,
+                # then set that table in the PlayerStatsMap.
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    Deaths := MakeUpdatedPlayerStat(DeathStat, Value)
+            else if(Stat = StatType.Version):
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    Version := Value
+            else if(Stat = StatType.PistolKills):
+                PistolKillStat := PlayerStatsTable.PistolKills
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    PistolKills := MakeUpdatedPlayerStat(PistolKillStat, Value)
+            else if(Stat = StatType.ShotGunKills):
+                ShotGunKillStat := PlayerStatsTable.ShotGunKills
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    ShotGunKills := MakeUpdatedPlayerStat(ShotGunKillStat, Value)
+            else if(Stat = StatType.RifleKills):
+                RifleKillStat := PlayerStatsTable.RifleKills
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    RifleKills := MakeUpdatedPlayerStat(RifleKillStat, Value)
+            else if(Stat = StatType.SmgKills):
+                SmgKillStat := PlayerStatsTable.SmgKills
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    SmgKills := MakeUpdatedPlayerStat(SmgKillStat, Value)
+            else if(Stat = StatType.SniperKills):
+                SniperKillStat := PlayerStatsTable.SniperKills
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    SniperKills := MakeUpdatedPlayerStat(SniperKillStat, Value)
+            else if(Stat = StatType.MeleeKills):
+                MeleeKillStat := PlayerStatsTable.MeleeKills
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    MeleeKills := MakeUpdatedPlayerStat(MeleeKillStat, Value)
+            else if(Stat = StatType.HeadShotKills):
+                HeadShotKillStat := PlayerStatsTable.HeadShotKills
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    HeadShotKills := MakeUpdatedPlayerStat(HeadShotKillStat, Value)
+            else if(Stat = StatType.Jumps):
+                JumpStat := PlayerStatsTable.Jumps
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    Jumps := MakeUpdatedPlayerStat(JumpStat, Value)
+            else if(Stat = StatType.Run):
+                RunStat := PlayerStatsTable.Run
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    Run := MakeUpdatedPlayerStat(RunStat, Value)
+            else if(Stat = StatType.Emote):
+                EmoteStat := PlayerStatsTable.Emote
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    Emote := MakeUpdatedPlayerStat(EmoteStat, Value)
+            else if(Stat = StatType.Trolling):
+                TrollingStat := PlayerStatsTable.Trolling
+                set PlayerStatsMap[Player] = player_stats_table:
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
+                    Trolling := MakeUpdatedPlayerStat(TrollingStat, Value)
+            else:
+                Print("Stat type not recognized.") 
+                    
+
+
+var PlayerStatsMap:weak_map(player, player_stats_table) = map{}
+
